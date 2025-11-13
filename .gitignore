@@ -1,0 +1,21 @@
+# Configuration files
+# NEVER commit your database credentials!
+config.php
+
+# Vendor directories (for Composer)
+/vendor/
+
+# Log files
+*.log
+
+# XAMPP / WAMP server-specific files
+.httpd.conf
+httpd-xampp.conf
+webalizer.conf
+.htaccess
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
