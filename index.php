@@ -1,3 +1,11 @@
+<?php require_once 'includes/header.php'; ?>
+
+<h1>Welcome to the Homepage!</h1>
+
+<?php require_once 'includes/footer.php'; ?>
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,7 +14,7 @@
     <title>planbnb</title>
 </head>
 <body>
-    <h1>plantbnb</h1>
+    <h1>&#x1FAB4;plantbnb</h1>
     <?php
         echo "This is the plantbnb landing page!"
     ?>

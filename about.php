@@ -6,7 +6,7 @@
     <title>Document</title>
 </head>
 <body>
-    <h1>plantbnb</h1>
+    <h1>&#x1FAB4;plantbnb</h1>
     <p>This is the about page of plantbnb!</p>
 </body>
 </html>
