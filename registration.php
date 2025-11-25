@@ -144,6 +144,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php require_once 'includes/head-includes.php'; ?>
 </head>
 <body>
+    <!-- Include the site header/navigation -->
+    <?php require_once 'includes/header.php'; ?>
+    
     <!-- ============================================
          REGISTRATION PAGE - HTML VIEW (BOTTOM)
          ============================================ -->

@@ -100,6 +100,10 @@ try {
     <?php require_once 'includes/head-includes.php'; ?>
 </head>
 <body>
+    <!-- Include the header to show login status and navigation -->
+    <!-- This header displays the user's username, browse listings link, and logout button -->
+    <?php require_once 'includes/header.php'; ?>
+    
     <!-- ============================================
          DASHBOARD PAGE - HTML VIEW (BOTTOM)
          ============================================ -->
