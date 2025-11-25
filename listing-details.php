@@ -132,8 +132,6 @@ try {
         <?php
             if ($listing) {
                 // Extract and sanitize all listing data to prevent XSS attacks
-                // htmlspecialchars() converts special characters to HTML entities
-                // This prevents malicious code from running if user data contains HTML/JavaScript
                 $safeTitle = htmlspecialchars($listing['title']);
                 $safeDescription = htmlspecialchars($listing['description']);
                 $safeLocation = htmlspecialchars($listing['location_approx']);
@@ -148,8 +146,11 @@ try {
                 // Get the user's profile photo path and sanitize it
                 $profilePhotoPath = !empty($listing['profile_photo_path']) ? htmlspecialchars($listing['profile_photo_path']) : null;
 
+                // Get the listing photo path and sanitize it
+                // This is the photo of the plant that was uploaded when creating the listing
+                $listingPhotoPath = !empty($listing['listing_photo_path']) ? htmlspecialchars($listing['listing_photo_path']) : null;
+
                 // Determine the badge color based on listing type
-                // 'offer' = green (success), 'need' = orange (warning)
                 if ($safeListingType === 'offer') {
                     $badgeColor = 'success';
                     $badgeText = 'Offering';
@@ -159,7 +160,6 @@ try {
                 }
 
                 // Determine the status badge color
-                // 'active' = blue (info), 'inactive' = gray (secondary), 'completed' = green (success)
                 if ($safeStatus === 'active') {
                     $statusColor = 'info';
                 } else if ($safeStatus === 'completed') {
@@ -186,6 +186,21 @@ try {
                                 <?php echo ucfirst($safeStatus); ?>
                             </span>
                         </div>
+
+                        <!-- Listing Photo Section -->
+                        <!-- Display the plant photo if it exists -->
+                        <!-- This photo is uploaded when creating the listing -->
+                        <?php
+                            if ($listingPhotoPath) {
+                                // Listing has a photo, display it at the top of the card
+                                // We use inline styles for responsive sizing
+                                // width: 100% makes the image fill its container on all screen sizes
+                                // max-height: 400px prevents the image from being too tall
+                                // object-fit: cover crops the image nicely to fill the space
+                                echo "<img src=\"" . $listingPhotoPath . "\" alt=\"" . $safeTitle . "\" class=\"card-img-top\" style=\"width: 100%; max-height: 400px; object-fit: cover;\">";
+                            }
+                        ?>
+
 
                         <!-- Card Body with main listing information -->
                         <div class="card-body">
@@ -297,7 +312,7 @@ try {
                                 // Loop through each plant and display it as a card
                                 foreach ($plants as $plant) {
                                     // Extract and sanitize plant data
-                                    $safeplantType = htmlspecialchars($plant['plant_type']);
+                                    $safePlantType = htmlspecialchars($plant['plant_type']);
                                     $safeWateringNeeds = htmlspecialchars($plant['watering_needs']);
                                     $safeLightNeeds = htmlspecialchars($plant['light_needs']);
                             ?>
@@ -306,7 +321,7 @@ try {
                                         <!-- Card Header with plant name -->
                                         <div class="card-header bg-success text-white">
                                             <h6 class="mb-0">
-                                                <?php echo $safeplanType; ?>
+                                                <?php echo $safePlantType; ?>
                                             </h6>
                                         </div>
 
