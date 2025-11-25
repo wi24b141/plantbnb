@@ -1,4 +1,5 @@
 <?php
+// filepath: c:\xampp\htdocs\plantbnb\plantbnb\listings.php
 // Include the database configuration from db.php
 require_once 'db.php';
 
@@ -39,7 +40,6 @@ try {
 }
 ?>
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -49,6 +49,9 @@ try {
     <?php require_once 'includes/head-includes.php'; ?>
 </head>
 <body>
+    <!-- Include the header to show login status -->
+    <?php require_once 'includes/header.php'; ?>
+
     <div class="container mt-5">
         <!-- Header for the Recent Listings section -->
         <h2 class="mb-4">Recent Listings</h2>
@@ -149,7 +152,7 @@ try {
         ?>
     </div>
 
-    <!-- Load footer includes (Bootstrap JS bundle) -->
+    <!-- Load footer includes -->
     <?php require_once 'includes/footer.php'; ?>
 </body>
 </html>

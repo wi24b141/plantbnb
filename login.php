@@ -52,11 +52,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <html lang="en">
 <?php include __DIR__ . '/includes/head-includes.php'; ?>
 <body>
-    <header class="container text-center my-4">
-        <h1 class="site-brand" id="site-title">
-            <span class="brand-text">&#x1FAB4;plantbnb</span>
-        </h1>
-    </header>
+    <!-- Include the site header/navigation -->
+    <?php require_once 'includes/header.php'; ?>
 
     <main class="container py-4">
         <!-- Mobile-first responsive grid -->

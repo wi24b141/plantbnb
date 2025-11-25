@@ -5,7 +5,7 @@
 // Define the database connection settings
 // These values tell PDO where to find the database and how to log in
 $databaseHost = 'localhost';           // The server where MariaDB is running
-$databaseName = 'plantbnb_db';            // The name of the database we created
+$databaseName = 'plantbnbDatabase';    // The name of the database we created
 $databaseUser = 'root';                // The username to log in with (default for XAMPP)
 $databasePassword = '';                // The password (empty by default in XAMPP)
 
