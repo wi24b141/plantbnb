@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 25, 2025 at 01:55 PM
+-- Generation Time: Nov 25, 2025 at 02:29 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -48,7 +48,9 @@ CREATE TABLE `listings` (
 --
 
 INSERT INTO `listings` (`listing_id`, `user_id`, `listing_type`, `title`, `description`, `listing_photo_path`, `location_approx`, `start_date`, `end_date`, `experience`, `price_range`, `status`, `created_at`) VALUES
-(1, 1, 'need', 'Phalaenopsis', 'This is my Phalaenopsis plant!', 'uploads/listings/6925a6c48a878_Phalaenopsis plant.jpeg', 'Wien', '2025-11-25', '2025-12-24', 'Expert', '100€ per month', 'active', '2025-11-25 12:53:24');
+(1, 1, 'need', 'Phalaenopsis', 'This is my Phalaenopsis plant!', 'uploads/listings/6925a6c48a878_Phalaenopsis plant.jpeg', 'Wien', '2025-11-25', '2025-12-24', 'Expert', '100€ per month', 'active', '2025-11-25 12:53:24'),
+(2, 1, 'offer', 'I care for all types of plants', 'I love plants! I love plantbnb!', NULL, 'Salzburg', '2025-11-25', '2026-04-22', 'Expert', '10€ per day', 'active', '2025-11-25 13:24:53'),
+(3, 2, 'need', 'African Violettray plant', 'This African Violettray plant. Please do not let it die!!!', 'uploads/listings/6925aecb806b5_africanviolettraytable-7dce7e1fcc954d94830dc69504a04994.jpg', 'Wien', '2025-11-25', '2026-02-25', 'Intermediate', '10€ per week', 'active', '2025-11-25 13:27:39');
 
 -- --------------------------------------------------------
 
@@ -69,7 +71,9 @@ CREATE TABLE `plants` (
 --
 
 INSERT INTO `plants` (`plant_id`, `listing_id`, `plant_type`, `watering_needs`, `light_needs`) VALUES
-(1, 1, 'Phalaenopsis', 'Two times per day', 'do not know how much light');
+(1, 1, 'Phalaenopsis', 'Two times per day', 'do not know how much light'),
+(2, 2, 'all plants', 'all watering needs', 'sunlight or indoor light'),
+(3, 3, 'African Violettray plant', 'Little water', 'indoor light');
 
 -- --------------------------------------------------------
 
@@ -136,13 +140,13 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `listings`
 --
 ALTER TABLE `listings`
-  MODIFY `listing_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `listing_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `plants`
 --
 ALTER TABLE `plants`
-  MODIFY `plant_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `plant_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `users`

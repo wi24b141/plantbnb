@@ -70,9 +70,9 @@ try {
         <?php
             if (count($activeListings) > 0) {
                 // Create a responsive grid using Bootstrap's row-cols classes
-                // row-cols-1 = 1 column on small screens
-                // row-cols-md-3 = 3 columns on medium screens and up
-                // g-4 = Gap (spacing) of 1.5rem between columns
+                // row-cols-1 = 1 column on small screens (mobile-first)
+                // row-cols-md-3 = 3 columns on medium screens and up (desktop)
+                // g-4 = Gap (spacing) of 1.5rem between columns for touch-friendly spacing
                 echo "<div class=\"row row-cols-1 row-cols-md-3 g-4\">";
                 
                 // Loop through each active listing
@@ -88,15 +88,44 @@ try {
                     $safeListingType = htmlspecialchars($listing['listing_type']);
                     $listingID = intval($listing['listing_id']);
                     
+                    // Get the listing photo path and sanitize it
+                    // This is the photo of the plant that was uploaded when creating the listing
+                    // If no photo exists, this will be null or empty string
+                    $listingPhotoPath = !empty($listing['listing_photo_path']) ? htmlspecialchars($listing['listing_photo_path']) : null;
+                    
                     // Determine the badge color based on listing type
                     // 'offer' = green (success), 'need' = orange (warning)
                     $badgeColor = ($safeListingType === 'offer') ? 'success' : 'warning';
                     
                     // Start the column div for this card
+                    // col class makes each card take full width on mobile, 1/3 width on desktop
                     echo "<div class=\"col\">";
                     
                     // Create a Bootstrap Card
+                    // h-100 makes all cards the same height in a row (looks better)
+                    // shadow-sm adds a subtle shadow for depth
                     echo "  <div class=\"card h-100 shadow-sm\">";
+                    
+                    // Listing Photo Section
+                    // Display the plant photo if it exists
+                    // This photo appears at the very top of the card
+                    if ($listingPhotoPath) {
+                        // Listing has a photo, display it using card-img-top class
+                        // card-img-top is a Bootstrap class that styles images at the top of cards
+                        // We use inline styles for responsive sizing:
+                        // - height: 200px keeps all card images the same height for consistency
+                        // - object-fit: cover crops the image nicely to fill the space without distortion
+                        // - object-position: center centers the image in the cropped area
+                        echo "    <img src=\"" . $listingPhotoPath . "\" alt=\"" . $safeTitle . "\" class=\"card-img-top\" style=\"height: 200px; object-fit: cover; object-position: center;\">";
+                    } else {
+                        // No photo uploaded, display a placeholder
+                        // This ensures all cards have consistent layout even without photos
+                        // bg-light = light gray background
+                        // d-flex, align-items-center, justify-content-center = centers the text
+                        echo "    <div class=\"bg-light d-flex align-items-center justify-content-center\" style=\"height: 200px;\">";
+                        echo "      <span class=\"text-muted\">No photo available</span>";
+                        echo "    </div>";
+                    }
                     
                     // Card Header: Display the listing type as a badge
                     echo "    <div class=\"card-header bg-light\">";
