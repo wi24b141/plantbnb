@@ -147,6 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // HANDLE FILE UPLOAD
     // ============================================
 
+
     // Initialize variable to store listing photo path
     // This will be updated if a file is uploaded
     $listingPhotoPath = null;
@@ -214,6 +215,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // ============================================
+    // HANDLE CARE SHEET PDF UPLOAD
+    // ============================================
+
+    // Initialize variable to store care sheet PDF path
+    // This will be updated if a PDF is uploaded
+    $careSheetPath = null;
+
+    // Check if a PDF file was uploaded in the care_sheet field
+    // isset($_FILES['care_sheet']) checks if the file input exists
+    // $_FILES['care_sheet']['error'] == UPLOAD_ERR_OK checks if upload was successful (0 = no error)
+    if (isset($_FILES['care_sheet']) && $_FILES['care_sheet']['error'] === UPLOAD_ERR_OK) {
+        // A file was uploaded successfully, now validate it
+
+        // Extract file upload information
+        // $_FILES['care_sheet']['tmp_name'] = temporary file location on server
+        // $_FILES['care_sheet']['name'] = original filename from user's computer
+        // $_FILES['care_sheet']['size'] = file size in bytes
+        // $_FILES['care_sheet']['type'] = MIME type (should be application/pdf)
+        $uploadedCareSheetName = $_FILES['care_sheet']['name'];
+        $uploadedCareSheetSize = $_FILES['care_sheet']['size'];
+        $uploadedCareSheetTmpPath = $_FILES['care_sheet']['tmp_name'];
+        $uploadedCareSheetMimeType = $_FILES['care_sheet']['type'];
+
+        // Validate file size
+        // Maximum allowed size is 5MB = 5 * 1024 * 1024 = 5242880 bytes
+        // PDFs can contain detailed care instructions so we allow larger size
+        $maxCareSheetSize = 5 * 1024 * 1024;
+
+        if ($uploadedCareSheetSize > $maxCareSheetSize) {
+            // File is too large, add error message
+            $errors[] = "Care sheet file size exceeds 5MB limit. Please choose a smaller file.";
+        } else if ($uploadedCareSheetMimeType !== 'application/pdf') {
+            // File type is not allowed (only PDF allowed)
+            $errors[] = "Only PDF files are allowed for care sheets.";
+        } else {
+            // File passed validation, now process the upload
+
+            // Create the uploads/caresheets directory if it doesn't exist
+            // This ensures the directory is ready to receive the file
+            if (!is_dir('uploads/caresheets')) {
+                // Directory doesn't exist, so create it
+                // 0777 = permissions (readable, writable, executable for everyone)
+                // true = create parent directories if needed
+                mkdir('uploads/caresheets', 0777, true);
+            }
+
+            // Generate a unique filename to prevent overwriting existing files
+            // uniqid() creates a unique ID based on current time (13 characters)
+            // This ensures no two files will have the same name
+            // basename() extracts just the filename from the full path
+            $uniqueCareSheetName = uniqid() . "_" . basename($uploadedCareSheetName);
+
+            // Build the full path where the file will be saved
+            // This path is relative to the web root (e.g., uploads/caresheets/someid_care.pdf)
+            $careSheetDestination = 'uploads/caresheets/' . $uniqueCareSheetName;
+
+            // Move the uploaded file from temporary location to permanent location
+            // move_uploaded_file() is the secure way to handle file uploads
+            // It validates that the file was actually uploaded via HTTP POST
+            if (move_uploaded_file($uploadedCareSheetTmpPath, $careSheetDestination)) {
+                // File was successfully moved, save the path
+                $careSheetPath = $careSheetDestination;
+            } else {
+                // File move failed for some reason
+                $errors[] = "Failed to save the care sheet PDF. Please try again.";
+            }
+        }
+    }
+
+    // ============================================
     // INSERT INTO DATABASE
     // ============================================
 
@@ -229,6 +300,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     title,
                     description,
                     listing_photo_path,
+                    care_sheet_path,
                     location_approx,
                     start_date,
                     end_date,
@@ -242,6 +314,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     :title,
                     :description,
                     :listingPhotoPath,
+                    :careSheetPath,
                     :locationApprox,
                     :startDate,
                     :endDate,
@@ -256,17 +329,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $insertListingStatement = $connection->prepare($insertListingQuery);
 
             // Bind all the parameters to prevent SQL injection
-            // We use htmlspecialchars() to sanitize text data before storing
             $insertListingStatement->bindParam(':userID', $userID, PDO::PARAM_INT);
             $insertListingStatement->bindParam(':listingType', $listingType, PDO::PARAM_STR);
             $insertListingStatement->bindParam(':title', $title, PDO::PARAM_STR);
             $insertListingStatement->bindParam(':description', $description, PDO::PARAM_STR);
             $insertListingStatement->bindParam(':listingPhotoPath', $listingPhotoPath, PDO::PARAM_STR);
+            $insertListingStatement->bindParam(':careSheetPath', $careSheetPath, PDO::PARAM_STR);
             $insertListingStatement->bindParam(':locationApprox', $locationApprox, PDO::PARAM_STR);
             $insertListingStatement->bindParam(':startDate', $startDate, PDO::PARAM_STR);
             $insertListingStatement->bindParam(':endDate', $endDate, PDO::PARAM_STR);
             $insertListingStatement->bindParam(':experience', $experience, PDO::PARAM_STR);
             $insertListingStatement->bindParam(':priceRange', $priceRange, PDO::PARAM_STR);
+
 
             // Execute the insert
             $insertListingStatement->execute();
@@ -498,6 +572,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 >
                                 <small class="text-muted d-block mt-1">
                                     JPG or PNG format. Maximum file size: 3MB. Adding a photo helps attract more interest!
+                                </small>
+                            </div>
+
+                            <!-- Care Sheet PDF Upload (NEW) -->
+                            <!-- This allows users to attach detailed plant care instructions as a PDF -->
+                            <div class="mb-3">
+                                <label for="care_sheet" class="form-label">Care Sheet PDF (Optional)</label>
+                                <!-- type="file" creates a file upload input -->
+                                <!-- accept=".pdf" restricts file selection to PDF files only -->
+                                <input 
+                                    type="file" 
+                                    id="care_sheet" 
+                                    name="care_sheet" 
+                                    class="form-control" 
+                                    accept=".pdf"
+                                >
+                                <small class="text-muted d-block mt-1">
+                                    PDF format only. Maximum file size: 5MB. Upload a detailed care guide for your plants (watering schedule, feeding instructions, etc.)
                                 </small>
                             </div>
 
