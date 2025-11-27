@@ -324,7 +324,7 @@ try {
                 <!-- Create New Listing Card -->
                 <!-- col-12 = full width on mobile, col-md-6 col-lg-3 = 1/4 width on large desktop -->
                 <div class="col-12 col-md-6 col-lg-3">
-                    <a href="create-listing.php" class="text-decoration-none">
+                    <a href="listing-creator.php" class="text-decoration-none">
                         <div class="card shadow-sm h-100 text-center p-3 transition-hover" style="cursor: pointer; transition: transform 0.2s;">
                             <!-- Icon representing creating new listing -->
                             <div class="mb-2" style="font-size: 2.5rem;">
@@ -343,17 +343,17 @@ try {
                 <!-- Inbox/Messages Card -->
                 <!-- col-12 = full width on mobile, col-md-6 col-lg-3 = 1/4 width on large desktop -->
                 <div class="col-12 col-md-6 col-lg-3">
-                    <a href="messages.php" class="text-decoration-none">
+                    <a href="verification.php" class="text-decoration-none">
                         <div class="card shadow-sm h-100 text-center p-3 transition-hover" style="cursor: pointer; transition: transform 0.2s;">
                             <!-- Icon representing messages -->
                             <div class="mb-2" style="font-size: 2.5rem;">
-                                💬
+                                ✅
                             </div>
                             <!-- Action title -->
-                            <h5 class="card-title">Inbox</h5>
+                            <h5 class="card-title">User Verification</h5>
                             <!-- Descriptive text -->
                             <p class="card-text small text-muted mb-0">
-                                Check messages from other users
+                                Upload ID documents for verification
                             </p>
                         </div>
                     </a>

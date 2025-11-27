@@ -239,13 +239,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $uploadedCareSheetMimeType = $_FILES['care_sheet']['type'];
 
         // Validate file size
-        // Maximum allowed size is 5MB = 5 * 1024 * 1024 = 5242880 bytes
+        // Maximum allowed size is 3MB = 3 * 1024 * 1024 = 3145728 bytes
         // PDFs can contain detailed care instructions so we allow larger size
-        $maxCareSheetSize = 5 * 1024 * 1024;
+        $maxCareSheetSize = 3 * 1024 * 1024;
 
         if ($uploadedCareSheetSize > $maxCareSheetSize) {
             // File is too large, add error message
-            $errors[] = "Care sheet file size exceeds 5MB limit. Please choose a smaller file.";
+            $errors[] = "Care sheet file size exceeds 3MB limit. Please choose a smaller file.";
         } else if ($uploadedCareSheetMimeType !== 'application/pdf') {
             // File type is not allowed (only PDF allowed)
             $errors[] = "Only PDF files are allowed for care sheets.";
@@ -589,7 +589,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     accept=".pdf"
                                 >
                                 <small class="text-muted d-block mt-1">
-                                    PDF format only. Maximum file size: 5MB. Upload a detailed care guide for your plants (watering schedule, feeding instructions, etc.)
+                                    PDF format only. Maximum file size: 3MB. Upload a detailed care guide for your plants (watering schedule, lighting needs, etc.)
                                 </small>
                             </div>
 

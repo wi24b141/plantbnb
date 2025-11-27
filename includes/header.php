@@ -23,7 +23,7 @@ $username = $_SESSION['username'] ?? '';
         <!-- Brand/Logo on the left side of the navbar -->
         <!-- d-flex = use flexbox layout -->
         <!-- align-items-center = vertically align the logo -->
-        <a class="navbar-brand d-flex align-items-center" href="listings.php">
+        <a class="navbar-brand d-flex align-items-center" href="index.php">
           <span>plantbnb🪴</span>
         </a>
 
@@ -50,20 +50,33 @@ $username = $_SESSION['username'] ?? '';
             <!-- Left side navigation links -->
             <!-- ms-auto = margin-start: auto pushes items to the right -->
             <ul class="navbar-nav ms-auto">
+
+                <!-- Link to help (always visible) -->
+                <li class="nav-item">
+                    <a class="nav-link" href="help.php">Help</a>
+                </li>
+
                 <!-- Link to Listings page (always visible) -->
                 <li class="nav-item">
                     <a class="nav-link" href="listings.php">Browse Listings</a>
-                </li>
-
-                <!-- Link to dashboard (always visible) -->
-                <li class="nav-item">
-                    <a class="nav-link" href="dashboard.php">Dashboard</a>
                 </li>
 
                 <!-- Link to listing-creator (always visible) -->
                 <li class="nav-item">
                     <a class="nav-link" href="listing-creator.php">Create Listing</a>
                 </li>
+
+                <!-- Link to favorites page (always visible) -->
+                <li class="nav-item">
+                    <a class="nav-link" href="favoritelistings.php">Favorites</a>
+                </li>
+
+            
+                <!-- Link to dashboard (always visible) -->
+                <li class="nav-item">
+                    <a class="nav-link" href="dashboard.php">Dashboard</a>
+                </li>
+
 
                 <?php
                     // Check if the user is logged in
