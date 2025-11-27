@@ -22,6 +22,7 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 $listingID = intval($_GET['id']);
 
 // Use a try-catch block to safely handle database connection errors
+
 try {
     // Query 1: Fetch the specific listing with author information
     // We use a LEFT JOIN with users to get the author's username and profile photo
@@ -150,6 +151,11 @@ try {
                 // This is the photo of the plant that was uploaded when creating the listing
                 $listingPhotoPath = !empty($listing['listing_photo_path']) ? htmlspecialchars($listing['listing_photo_path']) : null;
 
+                // Get the care sheet PDF path and sanitize it
+                // This is the PDF file that contains detailed plant care instructions
+                // If the user uploaded a care sheet when creating the listing, this path will not be empty
+                $careSheetPath = !empty($listing['care_sheet_path']) ? htmlspecialchars($listing['care_sheet_path']) : null;
+
                 // Determine the badge color based on listing type
                 if ($safeListingType === 'offer') {
                     $badgeColor = 'success';
@@ -216,6 +222,37 @@ try {
                                     <?php echo nl2br($safeDescription); ?>
                                 </p>
                             </div>
+
+                            <!-- Care Sheet Download Section (NEW) -->
+                            <!-- This section appears only if a care sheet PDF was uploaded -->
+                            <!-- It provides a download button for the PDF -->
+                            <?php
+                                if ($careSheetPath) {
+                                    // Care sheet exists, display download button
+                                    // We use a Bootstrap alert box to make it stand out
+                            ?>
+                                <div class="mb-4">
+                                    <!-- Alert box with info color (blue) to highlight the care sheet -->
+                                    <!-- d-flex = use flexbox layout -->
+                                    <!-- justify-content-between = space out the text and button -->
+                                    <!-- align-items-center = vertically center the content -->
+                                    <div class="alert alert-info d-flex justify-content-between align-items-center" role="alert">
+                                        <div>
+                                            <h6 class="mb-0">📄 Care Sheet Available</h6>
+                                            <small class="text-muted">Download the detailed plant care instructions (PDF)</small>
+                                        </div>
+                                        <!-- Download button -->
+                                        <!-- download attribute forces browser to download instead of opening -->
+                                        <!-- btn-sm = smaller button size -->
+                                        <!-- The href points to the PDF file path stored in the database -->
+                                        <a href="<?php echo $careSheetPath; ?>" download class="btn btn-primary btn-sm">
+                                            Download PDF
+                                        </a>
+                                    </div>
+                                </div>
+                            <?php
+                                }
+                            ?>
 
                             <!-- Key Details Section -->
                             <!-- This section uses a responsive grid for mobile-first design -->
