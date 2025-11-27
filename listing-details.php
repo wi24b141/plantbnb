@@ -2,10 +2,38 @@
 // Include the database configuration from db.php
 require_once 'db.php';
 
+// ============================================
+// START SESSION TO CHECK IF USER IS LOGGED IN
+// ============================================
+
+// Start the session to access user login information
+// We need this to check if the current user has favorited this listing
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Check if user is logged in
+// We store this in a variable to use throughout the page
+$isLoggedIn = isset($_SESSION['user_id']);
+
+// Store the user_id if logged in, otherwise set to null
+// We use intval() to ensure it's an integer for extra safety
+if ($isLoggedIn) {
+    // User is logged in, get their user_id from the session
+    $currentUserID = intval($_SESSION['user_id']);
+} else {
+    // User is not logged in, set to null
+    $currentUserID = null;
+}
+
 // Initialize variables to store listing and plant data
 $listing = null;
 $plants = [];
 $errorMessage = '';
+
+// Initialize variable to track if current user has favorited this listing
+// This will be true if a favorite entry exists in the database
+$isFavorited = false;
 
 // Check if the 'id' parameter exists in the URL and is a valid number
 // We use isset() to check if the parameter exists, and is_numeric() to ensure it's a number
@@ -22,7 +50,6 @@ if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
 $listingID = intval($_GET['id']);
 
 // Use a try-catch block to safely handle database connection errors
-
 try {
     // Query 1: Fetch the specific listing with author information
     // We use a LEFT JOIN with users to get the author's username and profile photo
@@ -83,6 +110,35 @@ try {
         // Fetch all plants as an array of associative arrays
         // fetchAll() returns all rows, or an empty array if none are found
         $plants = $plantsStatement->fetchAll(PDO::FETCH_ASSOC);
+
+        // Query 3: Check if the current user has favorited this listing
+        // We only run this query if the user is logged in
+        if ($isLoggedIn) {
+            // Query to check if a favorite entry exists for this user and listing
+            // We SELECT the favorite_id to see if a row exists
+            $favoriteCheckQuery = "
+                SELECT favorite_id
+                FROM favorites
+                WHERE user_id = :userID
+                AND listing_id = :listingID
+            ";
+
+            // Prepare the favorite check query
+            $favoriteCheckStatement = $connection->prepare($favoriteCheckQuery);
+
+            // Bind both parameters to prevent SQL injection
+            $favoriteCheckStatement->bindParam(':userID', $currentUserID, PDO::PARAM_INT);
+            $favoriteCheckStatement->bindParam(':listingID', $listingID, PDO::PARAM_INT);
+
+            // Execute the query
+            $favoriteCheckStatement->execute();
+
+            // If a row is found, the user has favorited this listing
+            // fetch() returns false if no row exists
+            if ($favoriteCheckStatement->fetch()) {
+                $isFavorited = true;
+            }
+        }
     }
 
 } catch (PDOException $error) {
@@ -405,15 +461,69 @@ try {
                     <div class="d-grid gap-2 d-md-flex gap-md-2">
                         <!-- Apply for this listing button (full width on mobile, auto width on desktop) -->
                         <!-- This button links to apply.php with the listing ID as a parameter -->
-                        <a href="apply.php?id=<?php echo $listingID; ?>" class="btn btn-primary btn-lg">
+                        <a href="apply.php?id=<?php echo $listingID; ?>" class="btn btn-success btn-lg">
                             Apply for this Listing
                         </a>
 
-                        <!-- Save to Favorites button (secondary action) -->
-                        <!-- This is a link for now, but could be enhanced later -->
-                        <a href="favorites.php?id=<?php echo $listingID; ?>" class="btn btn-outline-secondary btn-lg">
-                            ♡ Add to Favorites
-                        </a>
+                        <!-- Favorite/Unfavorite Button -->
+                        <!-- This button changes based on whether the user has favorited this listing -->
+                        <!-- We only show this button if the user is logged in -->
+                        <?php
+                            if ($isLoggedIn) {
+                                // User is logged in, show favorite/unfavorite button
+
+                                if ($isFavorited) {
+                                    // User has already favorited this listing
+                                    // Show an "Unfavorite" button that submits a form to listing-unfavorite.php
+                                    // We use a form with POST method for security (prevents accidental unfavoriting via GET)
+                        ?>
+                                    <form method="POST" action="listing-unfavorite.php" class="d-grid d-md-inline">
+                                        <!-- Hidden input to pass the listing ID to listing-unfavorite.php -->
+                                        <!-- This tells the script which listing to unfavorite -->
+                                        <input type="hidden" name="listing_id" value="<?php echo $listingID; ?>">
+                                        
+                                        <!-- Hidden input to remember where to redirect after unfavoriting -->
+                                        <!-- After unfavoriting, we want to come back to this listing-details page -->
+                                        <input type="hidden" name="redirect_url" value="listing-details.php?id=<?php echo $listingID; ?>">
+                                        
+                                        <!-- Unfavorite button (red heart = already favorited) -->
+                                        <!-- btn-outline-danger = red outline to indicate removal action -->
+                                        <button type="submit" class="btn btn-outline-danger btn-lg">
+                                            ❤️ Remove from Favorites
+                                        </button>
+                                    </form>
+                        <?php
+                                } else {
+                                    // User has not favorited this listing yet
+                                    // Show an "Add to Favorites" button that submits a form to listing-favorite.php
+                        ?>
+                                    <form method="POST" action="listing-favorite.php" class="d-grid d-md-inline">
+                                        <!-- Hidden input to pass the listing ID to listing-favorite.php -->
+                                        <!-- This tells the script which listing to favorite -->
+                                        <input type="hidden" name="listing_id" value="<?php echo $listingID; ?>">
+                                        
+                                        <!-- Hidden input to remember where to redirect after favoriting -->
+                                        <!-- After favoriting, we want to come back to this listing-details page -->
+                                        <input type="hidden" name="redirect_url" value="listing-details.php?id=<?php echo $listingID; ?>">
+                                        
+                                        <!-- Favorite button (empty heart = not favorited yet) -->
+                                        <!-- btn-outline-secondary = gray outline (secondary action) -->
+                                        <button type="submit" class="btn btn-outline-secondary btn-lg">
+                                            ♡ Add to Favorites
+                                        </button>
+                                    </form>
+                        <?php
+                                }
+                            } else {
+                                // User is not logged in
+                                // Show a link to login page with message to sign in first
+                        ?>
+                                <a href="login.php" class="btn btn-outline-secondary btn-lg">
+                                    ♡ Login to Favorite
+                                </a>
+                        <?php
+                            }
+                        ?>
                     </div>
                 </div>
             </div>

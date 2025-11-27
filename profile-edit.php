@@ -277,7 +277,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="col-12 col-md-8 offset-md-2">
                 <div class="card shadow-sm">
                     <!-- Card Header -->
-                    <div class="card-header bg-primary text-white">
+                    <div class="card-header bg-success text-white">
                         <h3 class="mb-0">Edit Your Profile</h3>
                     </div>
 
