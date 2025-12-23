@@ -1,30 +1,9 @@
 <?php
-// ============================================
-// DASHBOARD PAGE - PHP LOGIC (TOP)
-// ============================================
+require_once 'includes/header.php';
+require_once 'includes/user-auth.php';
+require_once 'includes/db.php';
 
-// Start the session to access $_SESSION variables
-// session_start() must be called before any HTML output
-// It either starts a new session or resumes an existing one
-session_start();
 
-// Include the database connection
-require_once 'db.php';
-
-// ============================================
-// SECURITY CHECK: VERIFY USER IS LOGGED IN
-// ============================================
-
-// Check if user_id exists in the session
-// If the user is not logged in, $_SESSION['user_id'] will not be set
-// We redirect them immediately to the login page for security
-if (!isset($_SESSION['user_id'])) {
-    // User is not logged in, redirect to login page
-    // header() must be called before any HTML output
-    header('Location: login.php');
-    // exit() stops the script so nothing else runs after the redirect
-    exit();
-}
 
 // Store the user_id from the session for use in queries
 // We use intval() to ensure it's an integer for extra safety
@@ -97,7 +76,6 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - PlantBnB</title>
-    <?php require_once 'includes/head-includes.php'; ?>
 </head>
 <body>
     <!-- Include the header to show login status and navigation -->
@@ -304,7 +282,7 @@ try {
                 <!-- My Listings Card -->
                 <!-- col-12 = full width on mobile, col-md-6 col-lg-3 = 1/4 width on large desktop -->
                 <div class="col-12 col-md-6 col-lg-3">
-                    <a href="my-listings.php" class="text-decoration-none">
+                    <a href="listings.php" class="text-decoration-none">
                         <!-- h-100 = make card fill its container height -->
                         <div class="card shadow-sm h-100 text-center p-3 transition-hover" style="cursor: pointer; transition: transform 0.2s;">
                             <!-- Icon or emoji representing listings -->
@@ -312,10 +290,10 @@ try {
                                 📋
                             </div>
                             <!-- Action title -->
-                            <h5 class="card-title">My Listings</h5>
+                            <h5 class="card-title">Browse Listings</h5>
                             <!-- Descriptive text -->
                             <p class="card-text small text-muted mb-0">
-                                View and manage your plant listings
+                                Browse all plant listings
                             </p>
                         </div>
                     </a>
@@ -402,8 +380,5 @@ try {
             }
         ?>
     </div>
-
-    <!-- Include the site footer -->
-    <?php require_once 'includes/footer.php'; ?>
 </body>
 </html>

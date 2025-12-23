@@ -1,28 +1,7 @@
 <?php
-// filepath: c:\xampp\htdocs\plantbnb\plantbnb\verification.php
-
-// ============================================
-// VERIFICATION PAGE - PHP LOGIC (TOP)
-// ============================================
-
-// Start the session to access $_SESSION variables
-// session_start() must be called before any HTML output
-session_start();
-
-// Include the database connection
-require_once 'db.php';
-
-// ============================================
-// SECURITY CHECK: VERIFY USER IS LOGGED IN
-// ============================================
-
-// Check if user_id exists in the session
-// If the user is not logged in, redirect to the login page immediately
-if (!isset($_SESSION['user_id'])) {
-    // User is not logged in, redirect to login page
-    header('Location: login.php');
-    exit();
-}
+require_once 'includes/header.php';
+require_once 'includes/user-auth.php';
+require_once 'includes/db.php';
 
 // Store the user_id from the session for use in queries
 // We use intval() to ensure it's an integer for extra safety
@@ -219,7 +198,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Account Verification - PlantBnB</title>
-    <?php require_once 'includes/head-includes.php'; ?>
 </head>
 <body>
     <!-- ============================================
@@ -400,8 +378,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
-
-    <!-- Include the site footer -->
-    <?php require_once 'includes/footer.php'; ?>
 </body>
 </html>
