@@ -1,10 +1,7 @@
 <?php
-session_start();
-
-if (!isset($_SESSION["loggedIn"])) {
-    header("Location: login.php");
-    exit();
-}
+require_once 'includes/header.php';
+require_once 'includes/user-auth.php';
+require_once 'includes/db.php';
 
 ?>
 <!DOCTYPE html>
@@ -15,15 +12,6 @@ if (!isset($_SESSION["loggedIn"])) {
     <title>AdminPanel</title>
 </head>
 <body>
-
-<?php
-    echo $_SESSION["loggedIn"];
-    //echo $_SESSION["color"];
-
-
-?>
-
     <h1>Welcome Admin!</h1>
-    
 </body>
 </html>

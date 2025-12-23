@@ -1,10 +1,6 @@
 <?php
-// This command is always necessary when dealing with sessions
-// starts or RESUMES the session
-session_start();
-
-// Include the database connection
-require_once 'db.php';
+require_once 'includes/header.php';
+require_once 'includes/db.php';
 
 // Initialize error variable so it exists from page load
 $loginError = '';
@@ -46,18 +42,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     }
 }
-
 ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
-<?php include __DIR__ . '/includes/head-includes.php'; ?>
 <body>
-    <!-- Include the site header/navigation -->
-    <?php require_once 'includes/header.php'; ?>
-
     <main class="container py-4">
         <!-- Mobile-first responsive grid -->
-        <!-- col-12 = full width on phone, col-md-8 col-lg-5 = narrower on desktop -->
         <div class="row justify-content-center">
             <div class="col-12 col-md-8 col-lg-5">
                 <h2 class="mb-3 text-center">Login</h2>
@@ -72,25 +64,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 ?>
 
                 <!-- Login form -->
-                <!-- action="" submits to the same page for processing -->
-                <!-- method="post" sends data securely without showing it in the URL -->
                 <form action="" method="post" class="card p-4 shadow-sm">
                     <!-- Username input field -->
-                    <!-- mb-3 adds bottom margin for touch-friendly spacing -->
                     <div class="mb-3">
                         <label for="username" class="form-label">Username</label>
                         <input type="text" id="username" name="username" class="form-control" required>
                     </div>
 
                     <!-- Password input field -->
-                    <!-- type="password" hides characters for security -->
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
                         <input type="password" id="password" name="password" class="form-control" required>
                     </div>
 
                     <!-- Submit button -->
-                    <!-- d-grid makes button full width on mobile -->
                     <div class="d-grid">
                         <button type="submit" class="btn btn-success btn-lg">Login</button>
                     </div>
@@ -105,7 +92,5 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
         </div>
     </main>
-
-    <?php include __DIR__ . '/includes/footer.php'; ?>
 </body>
 </html>

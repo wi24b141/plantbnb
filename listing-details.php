@@ -1,30 +1,7 @@
 <?php
-// Include the database configuration from db.php
-require_once 'db.php';
-
-// ============================================
-// START SESSION TO CHECK IF USER IS LOGGED IN
-// ============================================
-
-// Start the session to access user login information
-// We need this to check if the current user has favorited this listing
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-
-// Check if user is logged in
-// We store this in a variable to use throughout the page
-$isLoggedIn = isset($_SESSION['user_id']);
-
-// Store the user_id if logged in, otherwise set to null
-// We use intval() to ensure it's an integer for extra safety
-if ($isLoggedIn) {
-    // User is logged in, get their user_id from the session
-    $currentUserID = intval($_SESSION['user_id']);
-} else {
-    // User is not logged in, set to null
-    $currentUserID = null;
-}
+require_once 'includes/header.php';
+require_once 'includes/user-auth.php';
+require_once 'includes/db.php';
 
 // Initialize variables to store listing and plant data
 $listing = null;

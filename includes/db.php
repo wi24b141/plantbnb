@@ -1,5 +1,4 @@
 <?php
-
 $databaseHost = 'localhost';
 $databaseName = 'plantbnbDatabase';
 $databaseUser = 'root';

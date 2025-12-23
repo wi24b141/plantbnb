@@ -10,6 +10,9 @@ $username = $_SESSION['username'] ?? '';
 $currentPage = basename($_SERVER['PHP_SELF']);
 ?>
 
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="" crossorigin="anonymous">
+<link rel="stylesheet" href="resources/css/style.css">
+
 <!-- Navigation Bar -->
 <style>
 .navbar-custom {
@@ -85,6 +88,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         <input type="checkbox" id="menu-toggle" class="menu-toggle" />
         <label for="menu-toggle" class="menu-icon">&#9776;</label>
         <ul class="navbar-menu">
+            <li><a class="nav-link <?php if ($currentPage == 'index.php') echo ' active'; ?>" href="index.php">Home</a></li>
             <li><a class="nav-link <?php if ($currentPage == 'help.php') echo ' active'; ?>" href="help.php">Help</a></li>
             <li><a class="nav-link <?php if ($currentPage == 'listings.php') echo ' active'; ?>" href="listings.php">Browse Listings</a></li>
             <li><a class="nav-link <?php if ($currentPage == 'listing-creator.php') echo ' active'; ?>" href="listing-creator.php">Create Listing</a></li>

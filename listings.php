@@ -1,10 +1,6 @@
 <?php
-// filepath: c:\xampp\htdocs\plantbnb\plantbnb\listings.php
-// Include the database configuration from db.php
-require_once 'db.php';
-
-// Initialize the variable to store active listings
-$activeListings = [];
+require_once 'includes/header.php';
+require_once 'includes/db.php';
 
 // Use a try-catch block to safely handle database connection errors
 try {
@@ -46,7 +42,6 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Active Listings</title>
-    <?php require_once 'includes/head-includes.php'; ?>
 </head>
 <body>
     <!-- Include the header to show login status -->
@@ -180,8 +175,5 @@ try {
             }
         ?>
     </div>
-
-    <!-- Load footer includes -->
-    <?php require_once 'includes/footer.php'; ?>
 </body>
 </html>
