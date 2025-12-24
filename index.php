@@ -1,3 +1,7 @@
+<?php 
+    require_once __DIR__ . '/includes/header.php';
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,8 +10,6 @@
     <title>plantbnb🪴- Welcome</title>
 </head>
 <body>
-    <?php require_once 'includes/header.php'; ?>
-
     <div class="container mt-5">
         <div class="row mb-5">
             <div class="col-12 col-md-8 offset-md-2 text-center">
@@ -22,12 +24,12 @@
             <div class="col-12 col-md-8 offset-md-2">
                 <div class="d-grid gap-2 d-md-flex justify-content-md-center">
                     <!-- Browse Listings Button -->
-                    <a href="listings.php" class="btn btn-success btn-lg">
+                    <a href="/plantbnb/listings/listings.php" class="btn btn-success btn-lg">
                         Browse Listings
                     </a>
                     
                     <!-- Create Listing Button -->
-                    <a href="listing-creator.php" class="btn btn-outline-success btn-lg">
+                    <a href="/plantbnb/listings/listing-creator.php" class="btn btn-outline-success btn-lg">
                         Create a Listing
                     </a>
                 </div>

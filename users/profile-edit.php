@@ -1,7 +1,7 @@
 <?php
-require_once 'includes/header.php';
-require_once 'includes/user-auth.php';
-require_once 'includes/db.php';
+require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/user-auth.php';
+require_once __DIR__ . '/../includes/db.php';
 
 $userID = intval($_SESSION['user_id']);
 
@@ -202,10 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <!-- ============================================
          EDIT PROFILE PAGE - HTML VIEW (BOTTOM)
          ============================================ -->
-
-    <!-- Include the site header/navigation -->
-    <?php require_once 'includes/header.php'; ?>
-
+         
     <div class="container mt-4">
         <!-- Back to Dashboard Button -->
         <!-- This button allows users to easily navigate back -->

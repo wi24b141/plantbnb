@@ -1,10 +1,6 @@
 <?php
-// ============================================
-// REGISTRATION PAGE - PHP LOGIC (TOP)
-// ============================================
-
-// Include the database connection from db.php
-require_once 'db.php';
+require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/db.php';
 
 // Initialize variables to track the registration process
 $errors = [];
@@ -141,16 +137,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - PlantBnB</title>
-    <?php require_once 'includes/head-includes.php'; ?>
 </head>
 <body>
-    <!-- Include the site header/navigation -->
-    <?php require_once 'includes/header.php'; ?>
-    
-    <!-- ============================================
-         REGISTRATION PAGE - HTML VIEW (BOTTOM)
-         ============================================ -->
-
     <div class="container mt-5 mb-5">
         <!-- Row with responsive column sizing -->
         <!-- col-12 = full width on mobile -->
@@ -285,7 +273,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
     </div>
-
-    <?php require_once 'includes/footer.php'; ?>
 </body>
 </html>

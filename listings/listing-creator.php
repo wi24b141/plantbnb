@@ -1,7 +1,7 @@
 <?php
-require_once 'includes/header.php';
-require_once 'includes/user-auth.php';
-require_once 'includes/db.php';
+require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/user-auth.php';
+require_once __DIR__ . '/../includes/db.php';
 
 $userID = intval($_SESSION['user_id']);
 
@@ -379,11 +379,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
     <div class="container mt-4">
         <!-- Back to Dashboard Button -->
-        <!-- This button allows users to easily navigate back -->
-        <!-- col-12 = full width on mobile, col-md-10 = narrower on desktop -->
         <div class="row mb-3">
             <div class="col-12 col-md-10 offset-md-1">
-                <a href="dashboard.php" class="btn btn-outline-secondary btn-sm">
+                <a href="/plantbnb/users/dashboard.php" class="btn btn-outline-secondary btn-sm">
                     ← Back to Dashboard
                 </a>
             </div>
