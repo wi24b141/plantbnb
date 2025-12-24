@@ -1,7 +1,7 @@
 <?php
-require_once 'includes/header.php';
-require_once 'includes/user-auth.php';
-require_once 'includes/db.php';
+require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/user-auth.php';
+require_once __DIR__ . '/../includes/db.php';
 
 // Initialize variables to store listing and plant data
 $listing = null;
@@ -132,12 +132,8 @@ try {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Listing Details</title>
-    <?php require_once 'includes/head-includes.php'; ?>
 </head>
 <body>
-    <!-- Include the site header/navigation -->
-    <?php require_once 'includes/header.php'; ?>
-
     <div class="container mt-4">
         <!-- Back to Listings Button -->
         <!-- This button allows users to easily navigate back to the listings page -->
@@ -178,11 +174,64 @@ try {
                 $priceRange = htmlspecialchars($listing['price_range'] ?? 'Not specified');
                 
                 // Get the user's profile photo path and sanitize it
-                $profilePhotoPath = !empty($listing['profile_photo_path']) ? htmlspecialchars($listing['profile_photo_path']) : null;
+                // WHY: We need to ensure the image path is correct for the browser to load it.
+                //      The browser needs a path relative to the web root.
+                //      If the database stores only the filename, we add the folder structure.
+                if (!empty($listing['profile_photo_path'])) {
+                    $rawProfilePath = $listing['profile_photo_path'];
+                    
+                    // Remove any leading slashes to normalize the path
+                    // WHY: This prevents double slashes like //uploads/
+                    $rawProfilePath = ltrim($rawProfilePath, '/');
+                    
+                    // Check if the path already contains the uploads folder structure
+                    // WHY: If it's already there, we don't want to add it twice
+                    if (strpos($rawProfilePath, 'uploads/profiles/') !== 0) {
+                        // Path does not start with 'uploads/profiles/', so add it
+                        // WHY: The database might only store the filename (e.g., 'user123.jpg')
+                        $rawProfilePath = 'uploads/profiles/' . $rawProfilePath;
+                    }
+                    
+                    // Add the project folder prefix for XAMPP
+                    // WHY: XAMPP serves files from http://localhost/plantbnb/, so we need that prefix
+                    $rawProfilePath = '/plantbnb/' . $rawProfilePath;
+                    
+                    // Sanitize the final path to prevent XSS attacks
+                    $profilePhotoPath = htmlspecialchars($rawProfilePath);
+                } else {
+                    // No profile photo path in database, set to null
+                    $profilePhotoPath = null;
+                }
 
                 // Get the listing photo path and sanitize it
-                // This is the photo of the plant that was uploaded when creating the listing
-                $listingPhotoPath = !empty($listing['listing_photo_path']) ? htmlspecialchars($listing['listing_photo_path']) : null;
+                // WHY: We need to ensure the image path is correct for the browser to load it.
+                //      The browser needs a path relative to the web root (not the file system).
+                //      If the database stores only the filename, we add the folder structure.
+                if (!empty($listing['listing_photo_path'])) {
+                    $rawPath = $listing['listing_photo_path'];
+                    
+                    // Remove any leading slashes to normalize the path
+                    // WHY: This prevents double slashes like //uploads/
+                    $rawPath = ltrim($rawPath, '/');
+                    
+                    // Check if the path already contains the uploads folder structure
+                    // WHY: If it's already there, we don't want to add it twice
+                    if (strpos($rawPath, 'uploads/listings/') !== 0) {
+                        // Path does not start with 'uploads/listings/', so add it
+                        // WHY: The database might only store the filename (e.g., 'plant1.jpg')
+                        $rawPath = 'uploads/listings/' . $rawPath;
+                    }
+                    
+                    // Add the project folder prefix for XAMPP
+                    // WHY: XAMPP serves files from http://localhost/plantbnb/, so we need that prefix
+                    $rawPath = '/plantbnb/' . $rawPath;
+                    
+                    // Sanitize the final path to prevent XSS attacks
+                    $listingPhotoPath = htmlspecialchars($rawPath);
+                } else {
+                    // No photo path in database, set to null to show placeholder
+                    $listingPhotoPath = null;
+                }
 
                 // Get the care sheet PDF path and sanitize it
                 // This is the PDF file that contains detailed plant care instructions
@@ -509,8 +558,5 @@ try {
             }
         ?>
     </div>
-
-    <!-- Include the site footer -->
-    <?php require_once 'includes/footer.php'; ?>
 </body>
 </html>

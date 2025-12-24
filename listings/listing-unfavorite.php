@@ -1,7 +1,7 @@
 <?php
-require_once 'includes/header.php';
-require_once 'includes/user-auth.php';
-require_once 'includes/db.php';
+require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/user-auth.php';
+require_once __DIR__ . '/../includes/db.php';
 
 // Store the user_id from the session for use in queries
 $userID = intval($_SESSION['user_id']);

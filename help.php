@@ -1,3 +1,7 @@
+<?php 
+    require_once __DIR__ . '/includes/header.php';
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,8 +10,6 @@
     <title>Help - PlantBnB</title>
 </head>
 <body>
-    <?php require_once 'includes/header.php'; ?>
-
     <div class="container mt-4">
         <!-- Page Header -->
         <div class="row mb-4">

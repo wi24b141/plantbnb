@@ -1,6 +1,6 @@
 <?php
-require_once 'includes/header.php';
-require_once 'includes/db.php';
+require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/db.php';
 
 // Initialize error variable so it exists from page load
 $loginError = '';
@@ -34,7 +34,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $_SESSION["username"] = $user['username'];
 
             // Redirect to dashboard or home page after successful login
-            header("Location: listings.php");
+            header("Location: /plantbnb/listings/listings.php");
             exit();
         } else {
             // If user not found or password is wrong, show error

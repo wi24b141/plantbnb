@@ -1,6 +1,7 @@
 <?php
-require_once 'includes/header.php';
-require_once 'includes/db.php';
+require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/user-auth.php';
+require_once __DIR__ . '/../includes/db.php';
 
 if ($isLoggedIn === false) {
     header("Location: login.php");

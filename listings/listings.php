@@ -1,6 +1,6 @@
 <?php
-require_once 'includes/header.php';
-require_once 'includes/db.php';
+require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/db.php';
 
 // Use a try-catch block to safely handle database connection errors
 try {
@@ -44,9 +44,6 @@ try {
     <title>Active Listings</title>
 </head>
 <body>
-    <!-- Include the header to show login status -->
-    <?php require_once 'includes/header.php'; ?>
-
     <div class="container mt-5">
         <!-- Header for the Recent Listings section -->
         <h2 class="mb-4">Recent Listings</h2>
@@ -84,9 +81,34 @@ try {
                     $listingID = intval($listing['listing_id']);
                     
                     // Get the listing photo path and sanitize it
-                    // This is the photo of the plant that was uploaded when creating the listing
-                    // If no photo exists, this will be null or empty string
-                    $listingPhotoPath = !empty($listing['listing_photo_path']) ? htmlspecialchars($listing['listing_photo_path']) : null;
+                    // WHY: We need to ensure the image path is correct for the browser to load it.
+                    //      The browser needs a path relative to the web root (not the file system).
+                    //      If the database stores only the filename, we add the folder structure.
+                    if (!empty($listing['listing_photo_path'])) {
+                        $rawPath = $listing['listing_photo_path'];
+                        
+                        // Remove any leading slashes to normalize the path
+                        // WHY: This prevents double slashes like //uploads/
+                        $rawPath = ltrim($rawPath, '/');
+                        
+                        // Check if the path already contains the uploads folder structure
+                        // WHY: If it's already there, we don't want to add it twice
+                        if (strpos($rawPath, 'uploads/listings/') !== 0) {
+                            // Path does not start with 'uploads/listings/', so add it
+                            // WHY: The database might only store the filename (e.g., 'plant1.jpg')
+                            $rawPath = 'uploads/listings/' . $rawPath;
+                        }
+                        
+                        // Add the project folder prefix for XAMPP
+                        // WHY: XAMPP serves files from http://localhost/plantbnb/, so we need that prefix
+                        $rawPath = '/plantbnb/' . $rawPath;
+                        
+                        // Sanitize the final path to prevent XSS attacks
+                        $listingPhotoPath = htmlspecialchars($rawPath);
+                    } else {
+                        // No photo path in database, set to null to show placeholder
+                        $listingPhotoPath = null;
+                    }
                     
                     // Determine the badge color based on listing type
                     // 'offer' = green (success), 'need' = orange (warning)

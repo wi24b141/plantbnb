@@ -83,27 +83,27 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 
 <nav class="navbar-custom">
     <div class="navbar-container">
-        <a class="navbar-brand" href="index.php">plantbnb🪴</a>
+        <a class="navbar-brand" href="/plantbnb/index.php">plantbnb🪴</a>
         <!-- Toggle checkbox and icon -->
         <input type="checkbox" id="menu-toggle" class="menu-toggle" />
         <label for="menu-toggle" class="menu-icon">&#9776;</label>
         <ul class="navbar-menu">
-            <li><a class="nav-link <?php if ($currentPage == 'index.php') echo ' active'; ?>" href="index.php">Home</a></li>
-            <li><a class="nav-link <?php if ($currentPage == 'help.php') echo ' active'; ?>" href="help.php">Help</a></li>
-            <li><a class="nav-link <?php if ($currentPage == 'listings.php') echo ' active'; ?>" href="listings.php">Browse Listings</a></li>
-            <li><a class="nav-link <?php if ($currentPage == 'listing-creator.php') echo ' active'; ?>" href="listing-creator.php">Create Listing</a></li>
-            <li><a class="nav-link <?php if ($currentPage == 'favoritelistings.php') echo ' active'; ?>" href="favoritelistings.php">Favorites</a></li>
-            <li><a class="nav-link <?php if ($currentPage == 'dashboard.php') echo ' active'; ?>" href="dashboard.php">Dashboard</a></li>
+            <li><a class="nav-link <?php if ($currentPage == 'index.php') echo ' active'; ?>" href="/plantbnb/index.php">Home</a></li>
+            <li><a class="nav-link <?php if ($currentPage == 'help.php') echo ' active'; ?>" href="/plantbnb/help.php">Help</a></li>
+            <li><a class="nav-link <?php if ($currentPage == 'listings.php') echo ' active'; ?>" href="/plantbnb/listings/listings.php">Browse Listings</a></li>
+            <li><a class="nav-link <?php if ($currentPage == 'listing-creator.php') echo ' active'; ?>" href="/plantbnb/listings/listing-creator.php">Create Listing</a></li>
+            <li><a class="nav-link <?php if ($currentPage == 'favoritelistings.php') echo ' active'; ?>" href="/plantbnb/listings/favoritelistings.php">Favorites</a></li>
+            <li><a class="nav-link <?php if ($currentPage == 'dashboard.php') echo ' active'; ?>" href="/plantbnb/users/dashboard.php">Dashboard</a></li>
             <?php if ($isLoggedIn) { ?>
                 <li>
                     <span class="nav-link text-success">
                         <strong>👤 <?php echo htmlspecialchars($username); ?></strong>
                     </span>
                 </li>
-                <li><a class="nav-link <?php if ($currentPage == 'logout.php') echo ' active'; ?>" href="logout.php">Logout</a></li>
+                <li><a class="nav-link <?php if ($currentPage == 'logout.php') echo ' active'; ?>" href="/plantbnb/users/logout.php">Logout</a></li>
             <?php } else { ?>
-                <li><a class="nav-link <?php if ($currentPage == 'login.php') echo ' active'; ?>" href="login.php">Login</a></li>
-                <li><a class="nav-link <?php if ($currentPage == 'registration.php') echo ' active'; ?>" href="registration.php">Register</a></li>
+                <li><a class="nav-link <?php if ($currentPage == 'login.php') echo ' active'; ?>" href="/plantbnb/users/login.php">Login</a></li>
+                <li><a class="nav-link <?php if ($currentPage == 'registration.php') echo ' active'; ?>" href="/plantbnb/users/registration.php">Register</a></li>
             <?php } ?>
         </ul>
     </div>

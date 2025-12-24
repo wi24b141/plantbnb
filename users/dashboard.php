@@ -1,7 +1,7 @@
 <?php
-require_once 'includes/header.php';
-require_once 'includes/user-auth.php';
-require_once 'includes/db.php';
+require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/user-auth.php';
+require_once __DIR__ . '/../includes/db.php';
 
 
 
@@ -78,17 +78,6 @@ try {
     <title>Dashboard - PlantBnB</title>
 </head>
 <body>
-    <!-- Include the header to show login status and navigation -->
-    <!-- This header displays the user's username, browse listings link, and logout button -->
-    <?php require_once 'includes/header.php'; ?>
-    
-    <!-- ============================================
-         DASHBOARD PAGE - HTML VIEW (BOTTOM)
-         ============================================ -->
-
-    <!-- Include the site header/navigation -->
-    <?php require_once 'includes/header.php'; ?>
-
     <div class="container mt-4">
         <!-- Check if there was a database error and display it -->
         <?php
@@ -282,7 +271,7 @@ try {
                 <!-- My Listings Card -->
                 <!-- col-12 = full width on mobile, col-md-6 col-lg-3 = 1/4 width on large desktop -->
                 <div class="col-12 col-md-6 col-lg-3">
-                    <a href="listings.php" class="text-decoration-none">
+                    <a href="/plantbnb/listings/listings.php" class="text-decoration-none">
                         <!-- h-100 = make card fill its container height -->
                         <div class="card shadow-sm h-100 text-center p-3 transition-hover" style="cursor: pointer; transition: transform 0.2s;">
                             <!-- Icon or emoji representing listings -->
@@ -302,7 +291,7 @@ try {
                 <!-- Create New Listing Card -->
                 <!-- col-12 = full width on mobile, col-md-6 col-lg-3 = 1/4 width on large desktop -->
                 <div class="col-12 col-md-6 col-lg-3">
-                    <a href="listing-creator.php" class="text-decoration-none">
+                    <a href="/plantbnb/listings/listing-creator.php" class="text-decoration-none">
                         <div class="card shadow-sm h-100 text-center p-3 transition-hover" style="cursor: pointer; transition: transform 0.2s;">
                             <!-- Icon representing creating new listing -->
                             <div class="mb-2" style="font-size: 2.5rem;">
@@ -321,7 +310,7 @@ try {
                 <!-- Inbox/Messages Card -->
                 <!-- col-12 = full width on mobile, col-md-6 col-lg-3 = 1/4 width on large desktop -->
                 <div class="col-12 col-md-6 col-lg-3">
-                    <a href="verification.php" class="text-decoration-none">
+                    <a href="/plantbnb/admin/verification.php" class="text-decoration-none">
                         <div class="card shadow-sm h-100 text-center p-3 transition-hover" style="cursor: pointer; transition: transform 0.2s;">
                             <!-- Icon representing messages -->
                             <div class="mb-2" style="font-size: 2.5rem;">
@@ -340,7 +329,7 @@ try {
                 <!-- Edit Profile Card -->
                 <!-- col-12 = full width on mobile, col-md-6 col-lg-3 = 1/4 width on large desktop -->
                 <div class="col-12 col-md-6 col-lg-3">
-                    <a href="profile-edit.php" class="text-decoration-none">
+                    <a href="/plantbnb/users/profile-edit.php" class="text-decoration-none">
                         <div class="card shadow-sm h-100 text-center p-3 transition-hover" style="cursor: pointer; transition: transform 0.2s;">
                             <!-- Icon representing profile editing -->
                             <div class="mb-2" style="font-size: 2.5rem;">
@@ -365,7 +354,7 @@ try {
                     <!-- btn-danger = red color to indicate a destructive action -->
                     <!-- d-grid = full width button on mobile -->
                     <div class="d-grid gap-2">
-                        <a href="logout.php" class="btn btn-danger btn-lg">
+                        <a href="/plantbnb/users/logout.php" class="btn btn-danger btn-lg">
                             Logout
                         </a>
                     </div>

@@ -1,7 +1,7 @@
 <?php
-require_once 'includes/header.php';
-require_once 'includes/user-auth.php';
-require_once 'includes/db.php';
+require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/user-auth.php';
+require_once __DIR__ . '/../includes/db.php';
 
 // Store the user_id from the session for use in queries
 // We use intval() to ensure it's an integer for extra safety
@@ -200,20 +200,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <title>Account Verification - PlantBnB</title>
 </head>
 <body>
-    <!-- ============================================
-         VERIFICATION PAGE - HTML VIEW (BOTTOM)
-         ============================================ -->
-
-    <!-- Include the site header/navigation -->
-    <?php require_once 'includes/header.php'; ?>
-
     <div class="container mt-4">
         <!-- Back to Dashboard Button -->
         <!-- This button allows users to easily navigate back -->
         <!-- col-12 = full width on mobile, col-md-8 = narrower on desktop -->
         <div class="row mb-3">
             <div class="col-12 col-md-8 offset-md-2">
-                <a href="dashboard.php" class="btn btn-outline-secondary btn-sm">
+                <a href="/plantbnb/users/dashboard.php" class="btn btn-outline-secondary btn-sm">
                     ← Back to Dashboard
                 </a>
             </div>
