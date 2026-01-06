@@ -3,8 +3,6 @@ require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';
 
-
-
 // Store the user_id from the session for use in queries
 // We use intval() to ensure it's an integer for extra safety
 $userID = intval($_SESSION['user_id']);
@@ -129,12 +127,16 @@ try {
                                 <!-- Profile Photo -->
                                 <?php
                                     // Extract the profile photo path
-                                    $profilePhoto = htmlspecialchars($user['profile_photo_path'] ?? '');
+                                    $profilePhoto = $user['profile_photo_path'] ?? '';
 
                                     // Check if the user has a profile photo
                                     if (!empty($profilePhoto)) {
+                                        // Build the correct path for the browser
+                                        // WHY: We're in users/ folder, so we need ../ to go up to project root
+                                        $profilePhotoPath = '../' . htmlspecialchars($profilePhoto);
+                                        
                                         // Display the user's uploaded profile photo
-                                        echo "<img src=\"" . $profilePhoto . "\" alt=\"" . $safeUsername . "'s profile photo\" class=\"rounded-circle\" style=\"width: 80px; height: 80px; object-fit: cover;\">";
+                                        echo "<img src=\"" . $profilePhotoPath . "\" alt=\"" . $safeUsername . "'s profile photo\" class=\"rounded-circle\" style=\"width: 80px; height: 80px; object-fit: cover;\">";
                                     } else {
                                         // Display a default placeholder image if no photo is uploaded
                                         // Using a placeholder service for demo purposes

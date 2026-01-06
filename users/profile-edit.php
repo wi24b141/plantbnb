@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/file-upload-helper.php';
 
 $userID = intval($_SESSION['user_id']);
 
@@ -86,67 +87,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // HANDLE FILE UPLOAD
     // ============================================
 
-    // Check if a file was uploaded in the profile_photo field
-    // isset($_FILES['profile_photo']) checks if the file input exists
-    // $_FILES['profile_photo']['error'] == UPLOAD_ERR_OK checks if upload was successful (0 = no error)
-    if (isset($_FILES['profile_photo']) && $_FILES['profile_photo']['error'] === UPLOAD_ERR_OK) {
-        // A file was uploaded successfully, now validate it
+    // Upload profile photo (JPG or PNG, max 2MB)
+    // uploadFile() returns either a file path (success) or an error message (failure) or null (no file)
+    $profilePhotoResult = uploadFile(
+        'profile_photo',                      // Form field name
+        __DIR__ . '/../uploads/profiles',     // Upload directory (absolute path from this file)
+        ['image/jpeg', 'image/png'],          // Allowed file types
+        2 * 1024 * 1024                       // Max size (2MB in bytes)
+    );
 
-        // Extract file upload information
-        // $_FILES['profile_photo']['tmp_name'] = temporary file location on server
-        // $_FILES['profile_photo']['name'] = original filename from user's computer
-        // $_FILES['profile_photo']['size'] = file size in bytes
-        // $_FILES['profile_photo']['type'] = MIME type (e.g., image/jpeg)
-        $uploadedFileName = $_FILES['profile_photo']['name'];
-        $uploadedFileSize = $_FILES['profile_photo']['size'];
-        $uploadedFileTmpPath = $_FILES['profile_photo']['tmp_name'];
-        $uploadedFileMimeType = $_FILES['profile_photo']['type'];
-
-        // Validate file size
-        // Maximum allowed size is 2MB = 2 * 1024 * 1024 = 2097152 bytes
-        $maxFileSize = 2 * 1024 * 1024;
-
-        if ($uploadedFileSize > $maxFileSize) {
-            // File is too large, set error message
-            $errorMessage = "File size exceeds 2MB limit. Please choose a smaller file.";
-        } else if ($uploadedFileMimeType !== 'image/jpeg' && $uploadedFileMimeType !== 'image/png') {
-            // File type is not allowed (only JPG and PNG allowed)
-            $errorMessage = "Only JPG and PNG files are allowed. Please upload an image in one of these formats.";
-        } else {
-            // File passed validation, now process the upload
-
-            // Create the uploads/profiles directory if it doesn't exist
-            // This ensures the directory is ready to receive the file
-            if (!is_dir('uploads/profiles')) {
-                // Directory doesn't exist, so create it
-                // 0777 = permissions (readable, writable, executable for everyone)
-                // true = create parent directories if needed
-                mkdir('uploads/profiles', 0777, true);
-            }
-
-            // Generate a unique filename to prevent overwriting existing files
-            // uniqid() creates a unique ID based on current time (13 characters)
-            // This ensures no two files will have the same name
-            // basename() extracts just the filename from the full path
-            $uniqueFileName = uniqid() . "_" . basename($uploadedFileName);
-
-            // Build the full path where the file will be saved
-            // This path is relative to the web root (e.g., uploads/profiles/someid_photo.jpg)
-            $destinationPath = 'uploads/profiles/' . $uniqueFileName;
-
-            // Move the uploaded file from temporary location to permanent location
-            // move_uploaded_file() is the secure way to handle file uploads
-            // It validates that the file was actually uploaded via HTTP POST
-            if (move_uploaded_file($uploadedFileTmpPath, $destinationPath)) {
-                // File was successfully moved, update the path variable
-                // We'll save this path to the database
-                $newProfilePhotoPath = $destinationPath;
-            } else {
-                // File move failed for some reason
-                $errorMessage = "Failed to save the profile photo. Please try again.";
-            }
-        }
+    // Check if upload failed (error message returned)
+    if (is_string($profilePhotoResult) && strpos($profilePhotoResult, '/') === false) {
+        // Upload failed, set error message
+        $errorMessage = "Profile photo: " . $profilePhotoResult;
+    } else if ($profilePhotoResult !== null) {
+        // Upload succeeded, update the path
+        $newProfilePhotoPath = $profilePhotoResult;
     }
+    // If $profilePhotoResult is null, no file was uploaded (user didn't select a file)
 
     // ============================================
     // UPDATE DATABASE
@@ -262,10 +220,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?php
                                     // Check if user has a profile photo
                                     if (!empty($currentProfilePhotoPath)) {
+                                        // Build the correct path for the browser
+                                        // WHY: We're in users/ folder, so we need ../ to go up to project root
+                                        $displayPath = '../' . htmlspecialchars($currentProfilePhotoPath);
+                                        
                                         // Display the user's current profile photo
                                         // The image is displayed in a circle using rounded-circle class
                                         // object-fit: cover ensures the image fills the circle without distortion
-                                        echo "<img src=\"" . htmlspecialchars($currentProfilePhotoPath) . "\" alt=\"Current profile photo\" class=\"rounded-circle\" style=\"width: 120px; height: 120px; object-fit: cover; border: 3px solid #e9ecef;\">";
+                                        echo "<img src=\"" . $displayPath . "\" alt=\"Current profile photo\" class=\"rounded-circle\" style=\"width: 120px; height: 120px; object-fit: cover; border: 3px solid #e9ecef;\">";
                                     } else {
                                         // No profile photo yet, display a placeholder
                                         // Using a placeholder service for demo purposes
