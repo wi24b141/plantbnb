@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/file-upload-helper.php';
 
 // Store the user_id from the session for use in queries
 // We use intval() to ensure it's an integer for extra safety
@@ -81,72 +82,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $newVerificationDocPath = $currentVerificationDocPath;
 
     // ============================================
-    // HANDLE FILE UPLOAD
+    // HANDLE FILE UPLOAD USING HELPER FUNCTION
     // ============================================
 
-    // Check if a file was uploaded in the verification_document field
-    // isset($_FILES['verification_document']) checks if the file input exists
-    // $_FILES['verification_document']['error'] == UPLOAD_ERR_OK checks if upload was successful (0 = no error)
-    if (isset($_FILES['verification_document']) && $_FILES['verification_document']['error'] === UPLOAD_ERR_OK) {
-        // A file was uploaded successfully, now validate it
+    // Upload verification document (JPG, PNG, or PDF, max 5MB)
+    // uploadFile() returns either a file path (success) or an error message (failure) or null (no file)
+    $verificationDocResult = uploadFile(
+        'verification_document',                        // Form field name
+        __DIR__ . '/../uploads/verification',          // Upload directory (absolute path)
+        ['image/jpeg', 'image/png', 'application/pdf'], // Allowed file types
+        5 * 1024 * 1024                                 // Max size (5MB in bytes)
+    );
 
-        // Extract file upload information
-        // $_FILES['verification_document']['tmp_name'] = temporary file location on server
-        // $_FILES['verification_document']['name'] = original filename from user's computer
-        // $_FILES['verification_document']['size'] = file size in bytes
-        // $_FILES['verification_document']['type'] = MIME type (e.g., image/jpeg, application/pdf)
-        $uploadedFileName = $_FILES['verification_document']['name'];
-        $uploadedFileSize = $_FILES['verification_document']['size'];
-        $uploadedFileTmpPath = $_FILES['verification_document']['tmp_name'];
-        $uploadedFileMimeType = $_FILES['verification_document']['type'];
-
-        // Validate file size
-        // Maximum allowed size is 5MB = 5 * 1024 * 1024 = 5242880 bytes
-        // ID documents can be scans/PDFs so we allow slightly larger size than profile photos
-        $maxFileSize = 5 * 1024 * 1024;
-
-        if ($uploadedFileSize > $maxFileSize) {
-            // File is too large, set error message
-            $errorMessage = "File size exceeds 5MB limit. Please choose a smaller file.";
-        } else if ($uploadedFileMimeType !== 'image/jpeg' && $uploadedFileMimeType !== 'image/png' && $uploadedFileMimeType !== 'application/pdf') {
-            // File type is not allowed (only JPG, PNG, and PDF allowed for ID documents)
-            $errorMessage = "Only JPG, PNG, and PDF files are allowed. Please upload your ID document in one of these formats.";
-        } else {
-            // File passed validation, now process the upload
-
-            // Create the uploads/verification directory if it doesn't exist
-            // This ensures the directory is ready to receive the file
-            if (!is_dir('uploads/verification')) {
-                // Directory doesn't exist, so create it
-                // 0777 = permissions (readable, writable, executable for everyone)
-                // true = create parent directories if needed
-                mkdir('uploads/verification', 0777, true);
-            }
-
-            // Generate a unique filename to prevent overwriting existing files
-            // uniqid() creates a unique ID based on current time (13 characters)
-            // This ensures no two files will have the same name
-            // basename() extracts just the filename from the full path
-            $uniqueFileName = uniqid() . "_" . basename($uploadedFileName);
-
-            // Build the full path where the file will be saved
-            // This path is relative to the web root (e.g., uploads/verification/someid_document.pdf)
-            $destinationPath = 'uploads/verification/' . $uniqueFileName;
-
-            // Move the uploaded file from temporary location to permanent location
-            // move_uploaded_file() is the secure way to handle file uploads
-            // It validates that the file was actually uploaded via HTTP POST
-            if (move_uploaded_file($uploadedFileTmpPath, $destinationPath)) {
-                // File was successfully moved, update the path variable
-                // We'll save this path to the database
-                $newVerificationDocPath = $destinationPath;
-            } else {
-                // File move failed for some reason
-                $errorMessage = "Failed to save the verification document. Please try again.";
-            }
-        }
+    // Check if upload failed (error message returned)
+    if (is_string($verificationDocResult) && strpos($verificationDocResult, '/') === false) {
+        // Upload failed, set error message
+        $errorMessage = "Verification document: " . $verificationDocResult;
+    } else if ($verificationDocResult !== null) {
+        // Upload succeeded, update the path
+        $newVerificationDocPath = $verificationDocResult;
     } else {
-        // No file was uploaded or there was an upload error
+        // No file was uploaded
         $errorMessage = "Please select an ID document to upload.";
     }
 

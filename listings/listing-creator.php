@@ -2,248 +2,119 @@
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/file-upload-helper.php';
 
+//TODO Intval???
+// Get the logged-in user's ID from the session
 $userID = intval($_SESSION['user_id']);
 
-$listingType = '';
-$title = '';
-$description = '';
-$locationApprox = '';
-$startDate = '';
-$endDate = '';
-$experience = '';
-$priceRange = '';
-$plantType = '';
-$wateringNeeds = '';
-$lightNeeds = '';
+// Initialize all form fields as empty strings
+// This prevents "undefined variable" errors and preserves user input after validation errors
+$formData = [
+    'listing_type' => '',
+    'title' => '',
+    'description' => '',
+    'location_approx' => '',
+    'start_date' => '',
+    'end_date' => '',
+    'experience' => '',
+    'price_range' => '',
+    'plant_type' => '',
+    'watering_needs' => '',
+    'light_needs' => ''
+];
+
+// Initialize error and success message arrays
+$errors = [];
+$successMessage = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // The form was submitted, so we process the new listing
 
     // Get all form data from $_POST and trim whitespace
-    // trim() removes spaces before and after the input
-    // ?? '' provides a default empty string if the key doesn't exist
-    $listingType = trim($_POST['listing_type'] ?? '');
-    $title = trim($_POST['title'] ?? '');
-    $description = trim($_POST['description'] ?? '');
-    $locationApprox = trim($_POST['location_approx'] ?? '');
-    $startDate = trim($_POST['start_date'] ?? '');
-    $endDate = trim($_POST['end_date'] ?? '');
-    $experience = trim($_POST['experience'] ?? '');
-    $priceRange = trim($_POST['price_range'] ?? '');
-    $plantType = trim($_POST['plant_type'] ?? '');
-    $wateringNeeds = trim($_POST['watering_needs'] ?? '');
-    $lightNeeds = trim($_POST['light_needs'] ?? '');
+    // TODO trim() removes spaces before and after the input
+    // TODO ?? '' provides a default empty string if the key doesn't exist
+    // TODO What does the => mean?
+    foreach ($formData as $key => $value) {
+        $formData[$key] = trim($_POST[$key] ?? '');
+    }
 
     // ============================================
     // VALIDATION LOGIC
     // ============================================
 
-    // Validate Listing Type
-    // Must be either 'offer' or 'need'
-    if (empty($listingType)) {
-        $errors[] = 'Please select a listing type (Offer or Need).';
-    } else if ($listingType !== 'offer' && $listingType !== 'need') {
-        $errors[] = 'Invalid listing type. Please select either Offer or Need.';
+    // Check listing type is valid (must be 'offer' or 'need')
+    if (empty($formData['listing_type']) || !in_array($formData['listing_type'], ['offer', 'need'])) {
+        $errors[] = 'Please select a valid listing type (Offer or Need).';
     }
 
-    // Validate Title
-    // Title is required and must be at least 5 characters
-    if (empty($title)) {
+    // Check title length (5-150 characters)
+    if (empty($formData['title'])) {
         $errors[] = 'Title is required.';
-    } else if (strlen($title) < 5) {
-        $errors[] = 'Title must be at least 5 characters long.';
-    } else if (strlen($title) > 150) {
-        $errors[] = 'Title must not exceed 150 characters.';
+    } else if (strlen($formData['title']) < 5 || strlen($formData['title']) > 150) {
+        $errors[] = 'Title must be between 5 and 150 characters.';
     }
 
-    // Validate Description
-    // Description is required and must be at least 20 characters
-    if (empty($description)) {
+    // Check description length (minimum 20 characters)
+    if (empty($formData['description'])) {
         $errors[] = 'Description is required.';
-    } else if (strlen($description) < 20) {
+    } else if (strlen($formData['description']) < 20) {
         $errors[] = 'Description must be at least 20 characters long.';
     }
 
-    // Validate Location
-    // Location is required
-    if (empty($locationApprox)) {
-        $errors[] = 'Approximate location is required.';
+    // Check required fields are filled
+    $requiredFields = ['location_approx', 'start_date', 'end_date', 'plant_type', 'watering_needs', 'light_needs'];
+    foreach ($requiredFields as $field) {
+        if (empty($formData[$field])) {
+            $fieldName = ucwords(str_replace('_', ' ', $field));
+            $errors[] = "{$fieldName} is required.";
+        }
     }
 
-    // Validate Start Date
-    // Start date is required and must be a valid date
-    if (empty($startDate)) {
-        $errors[] = 'Start date is required.';
-    }
-
-    // Validate End Date
-    // End date is required and must be after start date
-    if (empty($endDate)) {
-        $errors[] = 'End date is required.';
-    } else if (!empty($startDate) && strtotime($endDate) <= strtotime($startDate)) {
-        // strtotime() converts date string to Unix timestamp for comparison
-        // End date must be AFTER start date
-        $errors[] = 'End date must be after start date.';
-    }
-
-    // Validate Plant Type
-    // Plant type is required
-    if (empty($plantType)) {
-        $errors[] = 'Plant type is required.';
-    }
-
-    // Validate Watering Needs
-    // Watering needs are required
-    if (empty($wateringNeeds)) {
-        $errors[] = 'Watering needs are required.';
-    }
-
-    // Validate Light Needs
-    // Light needs are required
-    if (empty($lightNeeds)) {
-        $errors[] = 'Light needs are required.';
-    }
-
-    // ============================================
-    // HANDLE FILE UPLOAD
-    // ============================================
-
-
-    // Initialize variable to store listing photo path
-    // This will be updated if a file is uploaded
-    $listingPhotoPath = null;
-
-    // Check if a file was uploaded in the listing_photo field
-    // isset($_FILES['listing_photo']) checks if the file input exists
-    // $_FILES['listing_photo']['error'] == UPLOAD_ERR_OK checks if upload was successful (0 = no error)
-    if (isset($_FILES['listing_photo']) && $_FILES['listing_photo']['error'] === UPLOAD_ERR_OK) {
-        // A file was uploaded successfully, now validate it
-
-        // Extract file upload information
-        // $_FILES['listing_photo']['tmp_name'] = temporary file location on server
-        // $_FILES['listing_photo']['name'] = original filename from user's computer
-        // $_FILES['listing_photo']['size'] = file size in bytes
-        // $_FILES['listing_photo']['type'] = MIME type (e.g., image/jpeg)
-        $uploadedFileName = $_FILES['listing_photo']['name'];
-        $uploadedFileSize = $_FILES['listing_photo']['size'];
-        $uploadedFileTmpPath = $_FILES['listing_photo']['tmp_name'];
-        $uploadedFileMimeType = $_FILES['listing_photo']['type'];
-
-        // Validate file size
-        // Maximum allowed size is 3MB = 3 * 1024 * 1024 = 3145728 bytes
-        // Listing photos can be larger than profile photos to show plant details
-        $maxFileSize = 3 * 1024 * 1024;
-
-        if ($uploadedFileSize > $maxFileSize) {
-            // File is too large, add error message
-            $errors[] = "Photo file size exceeds 3MB limit. Please choose a smaller file.";
-        } else if ($uploadedFileMimeType !== 'image/jpeg' && $uploadedFileMimeType !== 'image/png') {
-            // File type is not allowed (only JPG and PNG allowed)
-            $errors[] = "Only JPG and PNG files are allowed for listing photos.";
-        } else {
-            // File passed validation, now process the upload
-
-            // Create the uploads/listings directory if it doesn't exist
-            // This ensures the directory is ready to receive the file
-            if (!is_dir('uploads/listings')) {
-                // Directory doesn't exist, so create it
-                // 0777 = permissions (readable, writable, executable for everyone)
-                // true = create parent directories if needed
-                mkdir('uploads/listings', 0777, true);
-            }
-
-            // Generate a unique filename to prevent overwriting existing files
-            // uniqid() creates a unique ID based on current time (13 characters)
-            // This ensures no two files will have the same name
-            // basename() extracts just the filename from the full path
-            $uniqueFileName = uniqid() . "_" . basename($uploadedFileName);
-
-            // Build the full path where the file will be saved
-            // This path is relative to the web root (e.g., uploads/listings/someid_photo.jpg)
-            $destinationPath = 'uploads/listings/' . $uniqueFileName;
-
-            // Move the uploaded file from temporary location to permanent location
-            // move_uploaded_file() is the secure way to handle file uploads
-            // It validates that the file was actually uploaded via HTTP POST
-            if (move_uploaded_file($uploadedFileTmpPath, $destinationPath)) {
-                // File was successfully moved, save the path
-                $listingPhotoPath = $destinationPath;
-            } else {
-                // File move failed for some reason
-                $errors[] = "Failed to save the listing photo. Please try again.";
-            }
+    // Check end date is after start date
+    // strtotime() converts date string to Unix timestamp for comparison
+    if (!empty($formData['start_date']) && !empty($formData['end_date'])) {
+        if (strtotime($formData['end_date']) <= strtotime($formData['start_date'])) {
+            $errors[] = 'End date must be after start date.';
         }
     }
 
     // ============================================
-    // HANDLE CARE SHEET PDF UPLOAD
+    // HANDLE FILE UPLOADS
     // ============================================
 
-    // Initialize variable to store care sheet PDF path
-    // This will be updated if a PDF is uploaded
-    $careSheetPath = null;
+    // Upload listing photo (JPG or PNG, max 3MB)
+    // uploadFile() returns either a file path (success) or an error message (failure) or null (no file)
+    $listingPhotoResult = uploadFile(
+        'listing_photo',                      // Form field name
+        //TODO __DIR__ gives us the current folder (listings) Explain???
+        __DIR__ . '/../uploads/listings',                   // Upload directory
+        ['image/jpeg', 'image/png'],          // Allowed file types
+        3 * 1024 * 1024                       // Max size (3MB in bytes)
+    );
 
-    // Check if a PDF file was uploaded in the care_sheet field
-    // isset($_FILES['care_sheet']) checks if the file input exists
-    // $_FILES['care_sheet']['error'] == UPLOAD_ERR_OK checks if upload was successful (0 = no error)
-    if (isset($_FILES['care_sheet']) && $_FILES['care_sheet']['error'] === UPLOAD_ERR_OK) {
-        // A file was uploaded successfully, now validate it
+    // Check if upload failed (error message returned)
+    if (is_string($listingPhotoResult) && strpos($listingPhotoResult, '/') === false) {
+        $errors[] = "Listing photo: " . $listingPhotoResult;
+        $listingPhotoPath = null;
+    } else {
+        $listingPhotoPath = $listingPhotoResult;
+    }
 
-        // Extract file upload information
-        // $_FILES['care_sheet']['tmp_name'] = temporary file location on server
-        // $_FILES['care_sheet']['name'] = original filename from user's computer
-        // $_FILES['care_sheet']['size'] = file size in bytes
-        // $_FILES['care_sheet']['type'] = MIME type (should be application/pdf)
-        $uploadedCareSheetName = $_FILES['care_sheet']['name'];
-        $uploadedCareSheetSize = $_FILES['care_sheet']['size'];
-        $uploadedCareSheetTmpPath = $_FILES['care_sheet']['tmp_name'];
-        $uploadedCareSheetMimeType = $_FILES['care_sheet']['type'];
+    // Upload care sheet PDF (only PDF, max 3MB)
+    $careSheetResult = uploadFile(
+        'care_sheet',                         // Form field name
+        __DIR__ . '/../uploads/caresheets',                 // Upload directory
+        ['application/pdf'],                  // Allowed file types
+        3 * 1024 * 1024                       // Max size (3MB in bytes)
+    );
 
-        // Validate file size
-        // Maximum allowed size is 3MB = 3 * 1024 * 1024 = 3145728 bytes
-        // PDFs can contain detailed care instructions so we allow larger size
-        $maxCareSheetSize = 3 * 1024 * 1024;
-
-        if ($uploadedCareSheetSize > $maxCareSheetSize) {
-            // File is too large, add error message
-            $errors[] = "Care sheet file size exceeds 3MB limit. Please choose a smaller file.";
-        } else if ($uploadedCareSheetMimeType !== 'application/pdf') {
-            // File type is not allowed (only PDF allowed)
-            $errors[] = "Only PDF files are allowed for care sheets.";
-        } else {
-            // File passed validation, now process the upload
-
-            // Create the uploads/caresheets directory if it doesn't exist
-            // This ensures the directory is ready to receive the file
-            if (!is_dir('uploads/caresheets')) {
-                // Directory doesn't exist, so create it
-                // 0777 = permissions (readable, writable, executable for everyone)
-                // true = create parent directories if needed
-                mkdir('uploads/caresheets', 0777, true);
-            }
-
-            // Generate a unique filename to prevent overwriting existing files
-            // uniqid() creates a unique ID based on current time (13 characters)
-            // This ensures no two files will have the same name
-            // basename() extracts just the filename from the full path
-            $uniqueCareSheetName = uniqid() . "_" . basename($uploadedCareSheetName);
-
-            // Build the full path where the file will be saved
-            // This path is relative to the web root (e.g., uploads/caresheets/someid_care.pdf)
-            $careSheetDestination = 'uploads/caresheets/' . $uniqueCareSheetName;
-
-            // Move the uploaded file from temporary location to permanent location
-            // move_uploaded_file() is the secure way to handle file uploads
-            // It validates that the file was actually uploaded via HTTP POST
-            if (move_uploaded_file($uploadedCareSheetTmpPath, $careSheetDestination)) {
-                // File was successfully moved, save the path
-                $careSheetPath = $careSheetDestination;
-            } else {
-                // File move failed for some reason
-                $errors[] = "Failed to save the care sheet PDF. Please try again.";
-            }
-        }
+    // Check if upload failed (error message returned)
+    if (is_string($careSheetResult) && strpos($careSheetResult, '/') === false) {
+        $errors[] = "Care sheet: " . $careSheetResult;
+        $careSheetPath = null;
+    } else {
+        $careSheetPath = $careSheetResult;
     }
 
     // ============================================
@@ -254,7 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (empty($errors)) {
         try {
             // Query to insert a new listing into the listings table
-            // We use :placeholders for all values to prevent SQL injection
+            // TODO What does this mean?? We use :placeholders for all values to prevent SQL injection
             $insertListingQuery = "
                 INSERT INTO listings (
                     user_id,
@@ -287,22 +158,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 )
             ";
 
+            //TODO How does this work??? Explain that!!!
+
             // Prepare the insert statement
             $insertListingStatement = $connection->prepare($insertListingQuery);
 
             // Bind all the parameters to prevent SQL injection
             $insertListingStatement->bindParam(':userID', $userID, PDO::PARAM_INT);
-            $insertListingStatement->bindParam(':listingType', $listingType, PDO::PARAM_STR);
-            $insertListingStatement->bindParam(':title', $title, PDO::PARAM_STR);
-            $insertListingStatement->bindParam(':description', $description, PDO::PARAM_STR);
+            $insertListingStatement->bindParam(':listingType', $formData['listing_type'], PDO::PARAM_STR);
+            $insertListingStatement->bindParam(':title', $formData['title'], PDO::PARAM_STR);
+            $insertListingStatement->bindParam(':description', $formData['description'], PDO::PARAM_STR);
             $insertListingStatement->bindParam(':listingPhotoPath', $listingPhotoPath, PDO::PARAM_STR);
             $insertListingStatement->bindParam(':careSheetPath', $careSheetPath, PDO::PARAM_STR);
-            $insertListingStatement->bindParam(':locationApprox', $locationApprox, PDO::PARAM_STR);
-            $insertListingStatement->bindParam(':startDate', $startDate, PDO::PARAM_STR);
-            $insertListingStatement->bindParam(':endDate', $endDate, PDO::PARAM_STR);
-            $insertListingStatement->bindParam(':experience', $experience, PDO::PARAM_STR);
-            $insertListingStatement->bindParam(':priceRange', $priceRange, PDO::PARAM_STR);
-
+            $insertListingStatement->bindParam(':locationApprox', $formData['location_approx'], PDO::PARAM_STR);
+            $insertListingStatement->bindParam(':startDate', $formData['start_date'], PDO::PARAM_STR);
+            $insertListingStatement->bindParam(':endDate', $formData['end_date'], PDO::PARAM_STR);
+            $insertListingStatement->bindParam(':experience', $formData['experience'], PDO::PARAM_STR);
+            $insertListingStatement->bindParam(':priceRange', $formData['price_range'], PDO::PARAM_STR);
 
             // Execute the insert
             $insertListingStatement->execute();
@@ -337,9 +209,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Bind the plant parameters
             $insertPlantStatement->bindParam(':listingID', $newListingID, PDO::PARAM_INT);
-            $insertPlantStatement->bindParam(':plantType', $plantType, PDO::PARAM_STR);
-            $insertPlantStatement->bindParam(':wateringNeeds', $wateringNeeds, PDO::PARAM_STR);
-            $insertPlantStatement->bindParam(':lightNeeds', $lightNeeds, PDO::PARAM_STR);
+            $insertPlantStatement->bindParam(':plantType', $formData['plant_type'], PDO::PARAM_STR);
+            $insertPlantStatement->bindParam(':wateringNeeds', $formData['watering_needs'], PDO::PARAM_STR);
+            $insertPlantStatement->bindParam(':lightNeeds', $formData['light_needs'], PDO::PARAM_STR);
 
             // Execute the plant insert
             $insertPlantStatement->execute();
@@ -348,17 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $successMessage = "Your listing has been created successfully!";
 
             // Clear the form fields after successful creation
-            $listingType = '';
-            $title = '';
-            $description = '';
-            $locationApprox = '';
-            $startDate = '';
-            $endDate = '';
-            $experience = '';
-            $priceRange = '';
-            $plantType = '';
-            $wateringNeeds = '';
-            $lightNeeds = '';
+            $formData = array_fill_keys(array_keys($formData), '');
 
         } catch (PDOException $error) {
             // If a database error occurs, add it to the errors array
@@ -462,11 +324,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 >
                                     <option value="">-- Select Type --</option>
                                     <!-- Check if 'offer' was previously selected to preserve form data after validation -->
-                                    <option value="offer" <?php if ($listingType === 'offer') { echo 'selected'; } ?>>
+                                    <option value="offer" <?php if ($formData['listing_type'] === 'offer') { echo 'selected'; } ?>>
                                         Offer (I can provide plant care)
                                     </option>
                                     <!-- Check if 'need' was previously selected -->
-                                    <option value="need" <?php if ($listingType === 'need') { echo 'selected'; } ?>>
+                                    <option value="need" <?php if ($formData['listing_type'] === 'need') { echo 'selected'; } ?>>
                                         Need (I am looking for plant care)
                                     </option>
                                 </select>
@@ -486,7 +348,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     name="title" 
                                     class="form-control" 
                                     placeholder="E.g., Monstera care needed for 2 weeks" 
-                                    value="<?php echo htmlspecialchars($title); ?>"
+                                    value="<?php echo htmlspecialchars($formData['title']); ?>"
                                     required
                                 >
                                 <small class="text-muted d-block mt-1">Short, descriptive title (5-150 characters)</small>
@@ -504,7 +366,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     rows="5" 
                                     placeholder="Provide detailed information about your plant care listing..."
                                     required
-                                ><?php echo htmlspecialchars($description); ?></textarea>
+                                ><?php echo htmlspecialchars($formData['description']); ?></textarea>
                                 <small class="text-muted d-block mt-1">
                                     Include important details like special care requirements, location preferences, etc. (minimum 20 characters)
                                 </small>
@@ -527,7 +389,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </small>
                             </div>
 
-                            <!-- Care Sheet PDF Upload (NEW) -->
+                            <!-- Care Sheet PDF Upload -->
                             <!-- This allows users to attach detailed plant care instructions as a PDF -->
                             <div class="mb-3">
                                 <label for="care_sheet" class="form-label">Care Sheet PDF (Optional)</label>
@@ -561,7 +423,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     name="location_approx" 
                                     class="form-control" 
                                     placeholder="E.g., Berlin, Munich, Hamburg" 
-                                    value="<?php echo htmlspecialchars($locationApprox); ?>"
+                                    value="<?php echo htmlspecialchars($formData['location_approx']); ?>"
                                     required
                                 >
                                 <small class="text-muted d-block mt-1">
@@ -581,7 +443,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         id="start_date" 
                                         name="start_date" 
                                         class="form-control" 
-                                        value="<?php echo htmlspecialchars($startDate); ?>"
+                                        value="<?php echo htmlspecialchars($formData['start_date']); ?>"
                                         required
                                     >
                                     <small class="text-muted d-block mt-1">When does this listing become active?</small>
@@ -595,7 +457,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         id="end_date" 
                                         name="end_date" 
                                         class="form-control" 
-                                        value="<?php echo htmlspecialchars($endDate); ?>"
+                                        value="<?php echo htmlspecialchars($formData['end_date']); ?>"
                                         required
                                     >
                                     <small class="text-muted d-block mt-1">When does this listing expire?</small>
@@ -618,7 +480,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     name="plant_type" 
                                     class="form-control" 
                                     placeholder="E.g., Monstera Deliciosa, Snake Plant, Pothos" 
-                                    value="<?php echo htmlspecialchars($plantType); ?>"
+                                    value="<?php echo htmlspecialchars($formData['plant_type']); ?>"
                                     required
                                 >
                                 <small class="text-muted d-block mt-1">
@@ -636,7 +498,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     rows="3" 
                                     placeholder="E.g., Water when soil is dry to touch. Reduce watering in winter."
                                     required
-                                ><?php echo htmlspecialchars($wateringNeeds); ?></textarea>
+                                ><?php echo htmlspecialchars($formData['watering_needs']); ?></textarea>
                                 <small class="text-muted d-block mt-1">
                                     How often and how much should the plant(s) be watered?
                                 </small>
@@ -652,7 +514,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     rows="3" 
                                     placeholder="E.g., Bright indirect light. Avoid direct sunlight."
                                     required
-                                ><?php echo htmlspecialchars($lightNeeds); ?></textarea>
+                                ><?php echo htmlspecialchars($formData['light_needs']); ?></textarea>
                                 <small class="text-muted d-block mt-1">
                                     What kind of light does the plant(s) need?
                                 </small>
@@ -674,7 +536,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     name="experience" 
                                     class="form-control" 
                                     placeholder="E.g., Beginner friendly, Intermediate, Expert" 
-                                    value="<?php echo htmlspecialchars($experience); ?>"
+                                    value="<?php echo htmlspecialchars($formData['experience']); ?>"
                                 >
                                 <small class="text-muted d-block mt-1">
                                     What level of plant care experience is needed?
@@ -690,7 +552,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     name="price_range" 
                                     class="form-control" 
                                     placeholder="E.g., €10-20 per week, Free, Negotiable" 
-                                    value="<?php echo htmlspecialchars($priceRange); ?>"
+                                    value="<?php echo htmlspecialchars($formData['price_range']); ?>"
                                 >
                                 <small class="text-muted d-block mt-1">
                                     What compensation (if any) are you offering/expecting?

@@ -174,9 +174,8 @@ try {
                 $priceRange = htmlspecialchars($listing['price_range'] ?? 'Not specified');
                 
                 // Get the user's profile photo path and sanitize it
-                // WHY: We need to ensure the image path is correct for the browser to load it.
-                //      The browser needs a path relative to the web root.
-                //      If the database stores only the filename, we add the folder structure.
+                // WHY: We need to construct the correct path for the browser.
+                //      Since this file is in listings/ folder, we go UP one level (../) to reach uploads/
                 if (!empty($listing['profile_photo_path'])) {
                     $rawProfilePath = $listing['profile_photo_path'];
                     
@@ -192,21 +191,20 @@ try {
                         $rawProfilePath = 'uploads/profiles/' . $rawProfilePath;
                     }
                     
-                    // Add the project folder prefix for XAMPP
-                    // WHY: XAMPP serves files from http://localhost/plantbnb/, so we need that prefix
-                    $rawProfilePath = '/plantbnb/' . $rawProfilePath;
+                    // Build path relative to this file's location
+                    // WHY: We're in listings/ folder, so ../ goes up to project root, then into uploads
+                    $profilePhotoPath = '../' . $rawProfilePath;
                     
                     // Sanitize the final path to prevent XSS attacks
-                    $profilePhotoPath = htmlspecialchars($rawProfilePath);
+                    $profilePhotoPath = htmlspecialchars($profilePhotoPath);
                 } else {
                     // No profile photo path in database, set to null
                     $profilePhotoPath = null;
                 }
 
                 // Get the listing photo path and sanitize it
-                // WHY: We need to ensure the image path is correct for the browser to load it.
-                //      The browser needs a path relative to the web root (not the file system).
-                //      If the database stores only the filename, we add the folder structure.
+                // WHY: We need to construct the correct path for the browser.
+                //      Since this file is in listings/ folder, we go UP one level (../) to reach uploads/
                 if (!empty($listing['listing_photo_path'])) {
                     $rawPath = $listing['listing_photo_path'];
                     
@@ -222,12 +220,12 @@ try {
                         $rawPath = 'uploads/listings/' . $rawPath;
                     }
                     
-                    // Add the project folder prefix for XAMPP
-                    // WHY: XAMPP serves files from http://localhost/plantbnb/, so we need that prefix
-                    $rawPath = '/plantbnb/' . $rawPath;
+                    // Build path relative to this file's location
+                    // WHY: We're in listings/ folder, so ../ goes up to project root, then into uploads
+                    $listingPhotoPath = '../' . $rawPath;
                     
                     // Sanitize the final path to prevent XSS attacks
-                    $listingPhotoPath = htmlspecialchars($rawPath);
+                    $listingPhotoPath = htmlspecialchars($listingPhotoPath);
                 } else {
                     // No photo path in database, set to null to show placeholder
                     $listingPhotoPath = null;
@@ -236,7 +234,27 @@ try {
                 // Get the care sheet PDF path and sanitize it
                 // This is the PDF file that contains detailed plant care instructions
                 // If the user uploaded a care sheet when creating the listing, this path will not be empty
-                $careSheetPath = !empty($listing['care_sheet_path']) ? htmlspecialchars($listing['care_sheet_path']) : null;
+                if (!empty($listing['care_sheet_path'])) {
+                    $rawCareSheetPath = $listing['care_sheet_path'];
+                    
+                    // Remove any leading slashes to normalize the path
+                    $rawCareSheetPath = ltrim($rawCareSheetPath, '/');
+                    
+                    // Check if the path already contains the uploads folder structure
+                    if (strpos($rawCareSheetPath, 'uploads/caresheets/') !== 0) {
+                        // Path does not start with 'uploads/caresheets/', so add it
+                        $rawCareSheetPath = 'uploads/caresheets/' . $rawCareSheetPath;
+                    }
+                    
+                    // Build path relative to this file's location
+                    // WHY: We're in listings/ folder, so ../ goes up to project root, then into uploads
+                    $careSheetPath = '../' . $rawCareSheetPath;
+                    
+                    // Sanitize the final path to prevent XSS attacks
+                    $careSheetPath = htmlspecialchars($careSheetPath);
+                } else {
+                    $careSheetPath = null;
+                }
 
                 // Determine the badge color based on listing type
                 if ($safeListingType === 'offer') {
