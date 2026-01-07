@@ -3,72 +3,125 @@ require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';
 
-// Store the user_id from the session for use in queries
+// ============================================================
+// STEP 2: GET THE LOGGED-IN USER'S ID
+// ============================================================
+
+// At this point, we know the user is logged in (user-auth.php checked that)
+// So we can safely access $_SESSION['user_id']
+// We convert it to an integer for safety (prevents SQL injection)
 $userID = intval($_SESSION['user_id']);
 
-// ============================================
-// HANDLE UNFAVORITE REQUEST
-// ============================================
+// ============================================================
+// STEP 3: CHECK IF FORM WAS SUBMITTED
+// ============================================================
 
-// Check if the form was submitted via POST method
+// We check if the page was accessed using the POST method
+// POST method = data was sent via a form submission
+// If someone just types the URL in their browser, that is GET method
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // The form was submitted, so we process the unfavorite request
+    // YES - Form was submitted via POST, we can continue
 
-    // Check if listing_id was sent in the POST data
+    // ============================================================
+    // STEP 4: VALIDATE THE LISTING ID
+    // ============================================================
+
+    // Check if the form included a field called "listing_id"
+    // AND check if that value is numeric (a number)
     if (isset($_POST['listing_id']) && is_numeric($_POST['listing_id'])) {
-        // Listing ID exists and is a number, proceed with unfavorite
+        // YES - We have a valid listing ID
 
-        // Store the listing ID and convert to integer for safety
+        // Store the listing ID as an integer for safety
         $listingID = intval($_POST['listing_id']);
 
-        // Get the redirect URL if provided, otherwise default to favoritelistings.php
-        // This allows us to redirect back to where the user came from
-        // CHANGED: Now defaults to favoritelistings.php (your renamed file)
+        // ============================================================
+        // STEP 5: DETERMINE WHERE TO REDIRECT AFTER UNFAVORITE
+        // ============================================================
+
+        // Check if the form included a "redirect_url" field
+        // This tells us which page to send the user back to after unfavoriting
         if (isset($_POST['redirect_url'])) {
+            // YES - Use the provided redirect URL
             $redirectURL = $_POST['redirect_url'];
         } else {
+            // NO - Use a default redirect URL (the favorites list page)
             $redirectURL = 'favoritelistings.php';
         }
 
-        try {
-            // Query to delete the favorite entry
-            // We need to match both user_id and listing_id to ensure users can only delete their own favorites
-            $deleteQuery = "
-                DELETE FROM favorites
-                WHERE user_id = :userID
-                AND listing_id = :listingID
-            ";
+        // ============================================================
+        // STEP 6: DELETE THE FAVORITE FROM DATABASE
+        // ============================================================
 
-            // Prepare the delete statement
+        // We use try-catch to handle database errors
+        try {
+            // WRITE THE DELETE QUERY
+            // This query removes one row from the "favorites" table
+            // We match BOTH user_id and listing_id to make sure:
+            // - The user can only delete THEIR OWN favorites
+            // - We delete the correct favorite entry
+            $deleteQuery = "DELETE FROM favorites WHERE user_id = :userID AND listing_id = :listingID";
+
+            // PREPARE THE QUERY (Step 1 of PDO prepared statements)
+            // This creates a prepared statement object
+            // Prepared statements prevent SQL injection attacks
             $deleteStatement = $connection->prepare($deleteQuery);
 
-            // Bind the parameters to prevent SQL injection
+            // BIND THE PARAMETERS (Step 2 of PDO prepared statements)
+            // Replace :userID with the actual $userID value
             $deleteStatement->bindParam(':userID', $userID, PDO::PARAM_INT);
+
+            // Replace :listingID with the actual $listingID value
             $deleteStatement->bindParam(':listingID', $listingID, PDO::PARAM_INT);
 
-            // Execute the delete
+            // EXECUTE THE QUERY (Step 3 of PDO prepared statements)
+            // This actually runs the DELETE command on the database
             $deleteStatement->execute();
 
-            // Unfavorite was successful, redirect back
-            // We use header() to redirect the browser
+            // ============================================================
+            // STEP 7: REDIRECT BACK TO PREVIOUS PAGE
+            // ============================================================
+
+            // The unfavorite was successful!
+            // Send the user back to the page they came from
+            // header() tells the browser to load a different page
             header('Location: ' . $redirectURL);
+
+            // Stop running this script immediately
+            // exit() is required after header() to prevent further code execution
             exit();
 
         } catch (PDOException $error) {
-            // If a database error occurs, redirect back with an error
-            // In a real application, you would show a proper error message
+            // ============================================================
+            // ERROR HANDLING: DATABASE ERROR
+            // ============================================================
+
+            // If something goes wrong with the database (connection lost, table missing, etc.)
+            // We just redirect the user back anyway
+            // NOTE: In a real app, we would display an error message to the user
             header('Location: ' . $redirectURL);
             exit();
         }
 
     } else {
-        // Invalid listing ID, redirect to listings page
+        // ============================================================
+        // ERROR HANDLING: INVALID LISTING ID
+        // ============================================================
+
+        // The form did NOT include a valid listing_id
+        // This should never happen if the form is built correctly
+        // Send user to the listings page
         header('Location: listings.php');
         exit();
     }
 
 } else {
-    // Form was not submitted via POST, redirect to listings page
+    // ============================================================
+    // ERROR HANDLING: NOT A POST REQUEST
+    // ============================================================
+
+    // Someone accessed this page directly (typed URL in browser)
+    // This page should ONLY be accessed via form submission (POST)
+    // Send user to the listings page
     header('Location: listings.php');
     exit();
 }

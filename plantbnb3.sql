@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Nov 27, 2025 at 02:02 PM
+-- Generation Time: Jan 07, 2026 at 03:37 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -18,7 +18,7 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 --
--- Database: `plantbnbdatabase`
+-- Database: `plantbnb3`
 --
 
 -- --------------------------------------------------------
@@ -33,6 +33,13 @@ CREATE TABLE `favorites` (
   `listing_id` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `favorites`
+--
+
+INSERT INTO `favorites` (`favorite_id`, `user_id`, `listing_id`, `created_at`) VALUES
+(1, 1, 2, '2026-01-07 02:34:58');
 
 -- --------------------------------------------------------
 
@@ -62,11 +69,31 @@ CREATE TABLE `listings` (
 --
 
 INSERT INTO `listings` (`listing_id`, `user_id`, `listing_type`, `title`, `description`, `listing_photo_path`, `care_sheet_path`, `location_approx`, `start_date`, `end_date`, `experience`, `price_range`, `status`, `created_at`) VALUES
-(1, 1, 'need', 'Phalaenopsis', 'This is my Phalaenopsis plant!', 'uploads/listings/6925a6c48a878_Phalaenopsis plant.jpeg', NULL, 'Wien', '2025-11-25', '2025-12-24', 'Expert', '100€ per month', 'active', '2025-11-25 12:53:24'),
-(2, 1, 'offer', 'I care for all types of plants', 'I love plants! I love plantbnb!', NULL, NULL, 'Salzburg', '2025-11-25', '2026-04-22', 'Expert', '10€ per day', 'active', '2025-11-25 13:24:53'),
-(3, 2, 'need', 'African Violettray plant', 'This African Violettray plant. Please do not let it die!!!', 'uploads/listings/6925aecb806b5_africanviolettraytable-7dce7e1fcc954d94830dc69504a04994.jpg', NULL, 'Wien', '2025-11-25', '2026-02-25', 'Intermediate', '10€ per week', 'active', '2025-11-25 13:27:39'),
-(4, 1, 'need', 'Seeking care for my Red Prayer Plant', 'Please care for me Red Prayer Plant.', NULL, 'uploads/caresheets/69283ce93dc49_Class01_HTML.pdf', 'Wien', '2025-11-27', '2025-12-09', 'Beginner', 'Paying 2€ per week', 'active', '2025-11-27 11:58:33'),
-(5, 2, 'need', 'Please care for my Bird of Paradise plant', 'This is my great Bird of Paradise plant', 'uploads/listings/692841358d603_Bird of Paradise photo.jpeg', 'uploads/caresheets/692841358db06_Class07_PHP_Advanced.pdf', 'Wien', '2025-11-27', '2026-05-12', 'Intermediate', 'I pay 3€ per month', 'active', '2025-11-27 12:16:53');
+(1, 1, 'offer', 'Providing plant care for all varieties of plants', 'I am providing plant care for all varieties of plants!', 'uploads/listings/695dc4ad09dce_Pink_flower.jpg', NULL, 'Wien', '2026-01-07', '2026-01-31', 'all', '20€ per month', 'active', '2026-01-07 02:27:57'),
+(2, 2, 'need', 'Red Prayer', 'This is my red prayer plant!', 'uploads/listings/695dc5e27b3b7_Red Prayer Plant.jpeg', 'uploads/caresheets/695dc5e27b6c5_Eingangsrechnungen_Moebelfix_Oktober2025.pdf', 'Wien', '2026-01-07', '2026-01-31', 'Expert', '5€ per month', 'active', '2026-01-07 02:33:06');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `messages`
+--
+
+CREATE TABLE `messages` (
+  `message_id` int(11) NOT NULL,
+  `sender_id` int(11) NOT NULL,
+  `receiver_id` int(11) NOT NULL,
+  `message_text` text NOT NULL,
+  `is_read` tinyint(1) DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `messages`
+--
+
+INSERT INTO `messages` (`message_id`, `sender_id`, `receiver_id`, `message_text`, `is_read`, `created_at`) VALUES
+(1, 2, 1, 'Hello Julia, can you look after my plant for the next month?', 1, '2026-01-07 02:30:55'),
+(2, 1, 2, 'Hello Alois, thanks for your request! Sounds good! Which exact dates do you need?', 0, '2026-01-07 02:34:30');
 
 -- --------------------------------------------------------
 
@@ -87,11 +114,8 @@ CREATE TABLE `plants` (
 --
 
 INSERT INTO `plants` (`plant_id`, `listing_id`, `plant_type`, `watering_needs`, `light_needs`) VALUES
-(1, 1, 'Phalaenopsis', 'Two times per day', 'do not know how much light'),
-(2, 2, 'all plants', 'all watering needs', 'sunlight or indoor light'),
-(3, 3, 'African Violettray plant', 'Little water', 'indoor light'),
-(4, 4, 'Red Prayer Plant', 'once per week', 'windowsill facing south'),
-(5, 5, 'Bird of Paradise', 'little', 'little');
+(1, 1, 'all types', 'all', 'all'),
+(2, 2, 'Red Prayer', 'little', 'sunlight');
 
 -- --------------------------------------------------------
 
@@ -117,8 +141,8 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`user_id`, `username`, `email`, `password_hash`, `profile_photo_path`, `verification_document_path`, `bio`, `role`, `is_verified`, `created_at`) VALUES
-(1, 'franz', 'franz@gmail.com', '$2y$10$yalSG3cnV/FQ.U8pKTOQX.wZdLGxsY.CxxHibiAj2r1AgFSq.Wld2', 'uploads/profiles/692597cd0c220_Tabby_cat_with_visible_nictitating_membrane.jpg', 'uploads/verification/6925a1395625a_dummy austrian drivers licence.jpg', 'My name is Franz. Please admire my cat in my profile picture.', 'user', 0, '2025-11-25 11:47:03'),
-(2, 'Berta', 'Berta@gmail.com', '$2y$10$vbfqaeHI9a/Eew2jAAcdO.gGZb2olT/W3V87B93zXKxpD5nOYqpnO', 'uploads/profiles/692598651bf9e_picture of dug puppy.jpg', NULL, 'I am Berta and I love plantbnb!', 'user', 0, '2025-11-25 11:51:05');
+(1, 'Julia', 'julia@email.com', '$2y$10$w/Oor0kvl2Qi2za7E3t89u7j5SeujVs7VcAThcfyCOmMKt7vyy7Om', 'uploads/profiles/695dc4310b4a3_dug puppy profile photo.jpg', NULL, 'Hello my name is Julia and I like plants!', 'user', 0, '2026-01-07 02:25:06'),
+(2, 'Alois', 'alois@email.com', '$2y$10$0eZq7gcaxMxt3R8Gd46OyeZWd8ZkxkLZZlgVsNOWJsQzX/sNCHp5K', 'uploads/profiles/695dc4ec49796_istockphoto-959866606-612x612.jpg', NULL, 'Hello my name is Alois.', 'user', 0, '2026-01-07 02:28:34');
 
 --
 -- Indexes for dumped tables
@@ -140,6 +164,15 @@ ALTER TABLE `listings`
   ADD PRIMARY KEY (`listing_id`),
   ADD KEY `idx_user_id` (`user_id`),
   ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_created_at` (`created_at`);
+
+--
+-- Indexes for table `messages`
+--
+ALTER TABLE `messages`
+  ADD PRIMARY KEY (`message_id`),
+  ADD KEY `idx_sender_id` (`sender_id`),
+  ADD KEY `idx_receiver_id` (`receiver_id`),
   ADD KEY `idx_created_at` (`created_at`);
 
 --
@@ -167,19 +200,25 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `favorites`
 --
 ALTER TABLE `favorites`
-  MODIFY `favorite_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `favorite_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `listings`
 --
 ALTER TABLE `listings`
-  MODIFY `listing_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `listing_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT for table `messages`
+--
+ALTER TABLE `messages`
+  MODIFY `message_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `plants`
 --
 ALTER TABLE `plants`
-  MODIFY `plant_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `plant_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `users`
@@ -203,6 +242,13 @@ ALTER TABLE `favorites`
 --
 ALTER TABLE `listings`
   ADD CONSTRAINT `listings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `messages`
+--
+ALTER TABLE `messages`
+  ADD CONSTRAINT `messages_ibfk_1` FOREIGN KEY (`sender_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `messages_ibfk_2` FOREIGN KEY (`receiver_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 
 --
 -- Constraints for table `plants`
