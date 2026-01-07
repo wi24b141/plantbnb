@@ -1,6 +1,6 @@
 <?php
 $databaseHost = 'localhost';
-$databaseName = 'plantbnbDatabase';
+$databaseName = 'plantbnb3';
 $databaseUser = 'root';
 $databasePassword = '';
 

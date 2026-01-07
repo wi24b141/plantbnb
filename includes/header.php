@@ -93,6 +93,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <li><a class="nav-link <?php if ($currentPage == 'listings.php') echo ' active'; ?>" href="/plantbnb/listings/listings.php">Browse Listings</a></li>
             <li><a class="nav-link <?php if ($currentPage == 'listing-creator.php') echo ' active'; ?>" href="/plantbnb/listings/listing-creator.php">Create Listing</a></li>
             <li><a class="nav-link <?php if ($currentPage == 'favoritelistings.php') echo ' active'; ?>" href="/plantbnb/listings/favoritelistings.php">Favorites</a></li>
+            <li><a class="nav-link <?php if ($currentPage == 'messages.php') echo ' active'; ?>" href="/plantbnb/users/messages.php">Messages</a></li>
             <li><a class="nav-link <?php if ($currentPage == 'dashboard.php') echo ' active'; ?>" href="/plantbnb/users/dashboard.php">Dashboard</a></li>
             <?php if ($isLoggedIn) { ?>
                 <li>
