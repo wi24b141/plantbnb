@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jan 07, 2026 at 03:37 AM
+-- Generation Time: Jan 09, 2026 at 03:35 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -39,7 +39,8 @@ CREATE TABLE `favorites` (
 --
 
 INSERT INTO `favorites` (`favorite_id`, `user_id`, `listing_id`, `created_at`) VALUES
-(1, 1, 2, '2026-01-07 02:34:58');
+(1, 1, 2, '2026-01-07 02:34:58'),
+(2, 3, 1, '2026-01-09 02:33:29');
 
 -- --------------------------------------------------------
 
@@ -93,7 +94,7 @@ CREATE TABLE `messages` (
 
 INSERT INTO `messages` (`message_id`, `sender_id`, `receiver_id`, `message_text`, `is_read`, `created_at`) VALUES
 (1, 2, 1, 'Hello Julia, can you look after my plant for the next month?', 1, '2026-01-07 02:30:55'),
-(2, 1, 2, 'Hello Alois, thanks for your request! Sounds good! Which exact dates do you need?', 0, '2026-01-07 02:34:30');
+(2, 1, 2, 'Hello Alois, thanks for your request! Sounds good! Which exact dates do you need?', 1, '2026-01-07 02:34:30');
 
 -- --------------------------------------------------------
 
@@ -120,6 +121,31 @@ INSERT INTO `plants` (`plant_id`, `listing_id`, `plant_type`, `watering_needs`, 
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `ratings`
+--
+
+CREATE TABLE `ratings` (
+  `rating_id` int(11) NOT NULL,
+  `rater_user_id` int(11) NOT NULL,
+  `rated_user_id` int(11) NOT NULL,
+  `rating` int(11) NOT NULL,
+  `comment` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `ratings`
+--
+
+INSERT INTO `ratings` (`rating_id`, `rater_user_id`, `rated_user_id`, `rating`, `comment`, `created_at`) VALUES
+(1, 1, 2, 3, NULL, '2026-01-08 23:02:07'),
+(2, 1, 2, 3, NULL, '2026-01-08 23:02:13'),
+(3, 1, 3, 4, NULL, '2026-01-09 02:31:59'),
+(4, 3, 1, 4, NULL, '2026-01-09 02:32:52');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `users`
 --
 
@@ -133,16 +159,18 @@ CREATE TABLE `users` (
   `bio` text DEFAULT NULL,
   `role` varchar(20) DEFAULT 'user',
   `is_verified` tinyint(1) DEFAULT 0,
-  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  `remember_token` varchar(64) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`user_id`, `username`, `email`, `password_hash`, `profile_photo_path`, `verification_document_path`, `bio`, `role`, `is_verified`, `created_at`) VALUES
-(1, 'Julia', 'julia@email.com', '$2y$10$w/Oor0kvl2Qi2za7E3t89u7j5SeujVs7VcAThcfyCOmMKt7vyy7Om', 'uploads/profiles/695dc4310b4a3_dug puppy profile photo.jpg', NULL, 'Hello my name is Julia and I like plants!', 'user', 0, '2026-01-07 02:25:06'),
-(2, 'Alois', 'alois@email.com', '$2y$10$0eZq7gcaxMxt3R8Gd46OyeZWd8ZkxkLZZlgVsNOWJsQzX/sNCHp5K', 'uploads/profiles/695dc4ec49796_istockphoto-959866606-612x612.jpg', NULL, 'Hello my name is Alois.', 'user', 0, '2026-01-07 02:28:34');
+INSERT INTO `users` (`user_id`, `username`, `email`, `password_hash`, `profile_photo_path`, `verification_document_path`, `bio`, `role`, `is_verified`, `created_at`, `remember_token`) VALUES
+(1, 'Julia', 'julia@email.com', '$2y$10$w/Oor0kvl2Qi2za7E3t89u7j5SeujVs7VcAThcfyCOmMKt7vyy7Om', 'uploads/profiles/695dc4310b4a3_dug puppy profile photo.jpg', NULL, 'Hello my name is Julia and I like plants!', 'admin', 0, '2026-01-07 02:25:06', NULL),
+(2, 'Alois', 'alois@email.com', '$2y$10$0eZq7gcaxMxt3R8Gd46OyeZWd8ZkxkLZZlgVsNOWJsQzX/sNCHp5K', 'uploads/profiles/695dc4ec49796_istockphoto-959866606-612x612.jpg', 'uploads/verification/69602f9e5f8f7_austrian drivers licence dummy.jpg', 'Hello my name is Alois.', 'user', 1, '2026-01-07 02:28:34', NULL),
+(3, 'antonia', 'antonia@gmail.com', '$2y$10$5q26KimyhT17M.2i9BDvqOBnFehJT9JsdhyJrho/4IltJL/eB3gjy', 'uploads/profiles/69604669ca273_Tabby_cat_with_visible_nictitating_membrane.jpg', NULL, 'Hello I am Antonia!', 'user', 0, '2026-01-09 00:03:36', NULL);
 
 --
 -- Indexes for dumped tables
@@ -183,6 +211,14 @@ ALTER TABLE `plants`
   ADD KEY `idx_listing_id` (`listing_id`);
 
 --
+-- Indexes for table `ratings`
+--
+ALTER TABLE `ratings`
+  ADD PRIMARY KEY (`rating_id`),
+  ADD KEY `idx_rater_user_id` (`rater_user_id`),
+  ADD KEY `idx_rated_user_id` (`rated_user_id`);
+
+--
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
@@ -190,7 +226,8 @@ ALTER TABLE `users`
   ADD UNIQUE KEY `username` (`username`),
   ADD UNIQUE KEY `email` (`email`),
   ADD KEY `idx_email` (`email`),
-  ADD KEY `idx_username` (`username`);
+  ADD KEY `idx_username` (`username`),
+  ADD KEY `idx_remember_token` (`remember_token`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -200,7 +237,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `favorites`
 --
 ALTER TABLE `favorites`
-  MODIFY `favorite_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `favorite_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `listings`
@@ -221,10 +258,16 @@ ALTER TABLE `plants`
   MODIFY `plant_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT for table `ratings`
+--
+ALTER TABLE `ratings`
+  MODIFY `rating_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- Constraints for dumped tables
@@ -255,6 +298,13 @@ ALTER TABLE `messages`
 --
 ALTER TABLE `plants`
   ADD CONSTRAINT `plants_ibfk_1` FOREIGN KEY (`listing_id`) REFERENCES `listings` (`listing_id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `ratings`
+--
+ALTER TABLE `ratings`
+  ADD CONSTRAINT `ratings_ibfk_1` FOREIGN KEY (`rater_user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `ratings_ibfk_2` FOREIGN KEY (`rated_user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

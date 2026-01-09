@@ -136,6 +136,45 @@ try {
                 $isFavorited = true;
             }
         }
+        
+        // =============================================================================
+        // DATABASE QUERY 4: Get the average rating for the listing author
+        // =============================================================================
+        // WHY: We want to show how other users have rated the person who posted this listing
+        //      This helps users decide if they want to work with this person
+        
+        $averageRating = 0;      // Will hold the average rating (0 to 5)
+        $totalRatings = 0;       // Will hold the number of ratings this user has received
+        
+        // Get the user_id of the listing author
+        $authorUserID = intval($listing['user_id']);
+        
+        $ratingQuery = "
+            SELECT 
+                AVG(rating) as average_rating,
+                COUNT(rating_id) as total_ratings
+            FROM ratings
+            WHERE rated_user_id = :authorUserID
+        ";
+        
+        // PREPARE the query
+        $ratingStatement = $connection->prepare($ratingQuery);
+        
+        // BIND the author's user ID
+        $ratingStatement->bindParam(':authorUserID', $authorUserID, PDO::PARAM_INT);
+        
+        // EXECUTE the query
+        $ratingStatement->execute();
+        
+        // FETCH the result
+        $ratingResult = $ratingStatement->fetch(PDO::FETCH_ASSOC);
+        
+        // If there are ratings, store them
+        if ($ratingResult && $ratingResult['total_ratings'] > 0) {
+            // Round the average to 1 decimal place
+            $averageRating = round($ratingResult['average_rating'], 1);
+            $totalRatings = intval($ratingResult['total_ratings']);
+        }
     }
 
 } catch (PDOException $error) {
@@ -418,6 +457,62 @@ try {
                             <h6 class="mb-2">
                                 <strong><?php echo $safeUsername; ?></strong>
                             </h6>
+                            
+                            <!-- =============================================================================
+                                 User Rating Display
+                                 WHY: Show the average rating this user has received from others
+                                 ============================================================================= -->
+                            <?php
+                                // Only display rating if the user has been rated at least once
+                                if ($totalRatings > 0) {
+                                    
+                                    // STEP 1: Build the star display
+                                    // WHY: We want to show stars visually (⭐⭐⭐) instead of just a number
+                                    
+                                    // Get the full stars (integer part of average)
+                                    // Example: If average is 4.3, fullStars = 4
+                                    $fullStars = floor($averageRating);
+                                    
+                                    // Check if there is a half star
+                                    // WHY: If average is 4.3, we show 4 full stars and 0 half stars
+                                    //      If average is 4.6, we show 4 full stars and 1 half star
+                                    $hasHalfStar = ($averageRating - $fullStars) >= 0.5;
+                                    
+                                    // Start building the star string
+                                    $starsDisplay = '';
+                                    
+                                    // Add full stars
+                                    for ($i = 0; $i < $fullStars; $i = $i + 1) {
+                                        $starsDisplay = $starsDisplay . '⭐';
+                                    }
+                                    
+                                    // Add half star if needed
+                                    if ($hasHalfStar) {
+                                        $starsDisplay = $starsDisplay . '✨';
+                                    }
+                                    
+                                    // STEP 2: Display the rating
+                                    echo '<div class="mb-3">';
+                                    echo '<div class="text-warning fw-bold">';
+                                    echo $starsDisplay;
+                                    echo ' ' . htmlspecialchars($averageRating) . ' / 5.0';
+                                    echo '</div>';
+                                    echo '<small class="text-muted">';
+                                    echo 'Based on ' . htmlspecialchars($totalRatings) . ' rating';
+                                    // Add 's' if more than 1 rating
+                                    if ($totalRatings > 1) {
+                                        echo 's';
+                                    }
+                                    echo '</small>';
+                                    echo '</div>';
+                                    
+                                } else {
+                                    // No ratings yet
+                                    echo '<div class="mb-3">';
+                                    echo '<small class="text-muted">No ratings yet</small>';
+                                    echo '</div>';
+                                }
+                            ?>
                             
                             <!-- Contact Button -->
                             <a href="../users/messages.php" class="btn btn-success">

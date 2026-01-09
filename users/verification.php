@@ -238,7 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="col-12 col-md-8 offset-md-2">
                 <!-- Link styled as a button to go back to dashboard -->
                 <a href="/plantbnb/users/dashboard.php" class="btn btn-outline-secondary btn-sm">
-                    Back to Dashboard
+                    ← Back to Dashboard
                 </a>
             </div>
         </div>

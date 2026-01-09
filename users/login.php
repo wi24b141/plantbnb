@@ -36,6 +36,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Same process as username
     $password = trim($_POST["password"] ?? "");
     
+    // Get the "remember me" checkbox value
+    // If the checkbox was checked, $_POST["remember_me"] will be "on"
+    // If not checked, it won't exist in $_POST at all
+    // isset() checks if the variable exists
+    $rememberMe = isset($_POST["remember_me"]);
+    
     
     // -----------------------------------------------------------
     // STEP 3B: Validate that the user filled in both fields
@@ -110,6 +116,41 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             
             // Store the username so we can display it on other pages
             $_SESSION["username"] = $user['username'];
+            
+            
+            // -------------------------------------------------------
+            // STEP 3E-2: Handle "Remember Me" functionality
+            // -------------------------------------------------------
+            
+            // Check if the user checked the "Remember Me" checkbox
+            if ($rememberMe) {
+                // The user wants to stay logged in on this device
+                
+                // Generate a random token (a secret code)
+                // bin2hex() converts binary data to a readable string
+                // random_bytes(32) creates 32 random bytes (very secure and unpredictable)
+                // The result is a 64-character string like "a3f9d8e7c2b1..."
+                $rememberToken = bin2hex(random_bytes(32));
+                
+                // Save this token in the database for this user
+                // We need this so we can verify the token later
+                $updateQuery = "UPDATE users SET remember_token = :token WHERE user_id = :user_id";
+                $updateStatement = $connection->prepare($updateQuery);
+                $updateStatement->bindParam(':token', $rememberToken, PDO::PARAM_STR);
+                $updateStatement->bindParam(':user_id', $user['user_id'], PDO::PARAM_INT);
+                $updateStatement->execute();
+                
+                // Store the token in a cookie on the user's computer
+                // setcookie() creates a small file on the user's browser
+                // Parameters explained:
+                // 1. "remember_token" = the name of the cookie
+                // 2. $rememberToken = the value (our random string)
+                // 3. time() + (30 * 24 * 60 * 60) = expiration time (30 days from now)
+                //    time() = current timestamp in seconds
+                //    30 days * 24 hours * 60 minutes * 60 seconds = 2,592,000 seconds
+                // 4. "/" = the cookie works for all pages on this website
+                setcookie("remember_token", $rememberToken, time() + (30 * 24 * 60 * 60), "/");
+            }
             
             
             // -------------------------------------------------------
@@ -237,6 +278,34 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <!-- type="password": Makes the input show dots/asterisks instead of text -->
                         <!-- name="password": This is the key used in $_POST["password"] -->
                         <input type="password" id="password" name="password" class="form-control" required>
+                    </div>
+
+                    
+                    <!-- ================================ -->
+                    <!-- Remember Me Checkbox             -->
+                    <!-- ================================ -->
+                    
+                    <!-- mb-3: Margin bottom (spacing below this field) -->
+                    <div class="mb-3">
+                        <!-- form-check: Bootstrap class for checkbox styling -->
+                        <div class="form-check">
+                            <!-- Checkbox Input:
+                                 type="checkbox" = Creates a checkbox (a small box you can click)
+                                 id="remember_me" = Unique identifier
+                                 name="remember_me" = The key used in $_POST["remember_me"]
+                                 class="form-check-input" = Bootstrap styling for checkboxes
+                                 
+                                 When checked: $_POST["remember_me"] will be "on"
+                                 When unchecked: $_POST["remember_me"] won't exist at all -->
+                            <input type="checkbox" id="remember_me" name="remember_me" class="form-check-input">
+                            
+                            <!-- Label for the checkbox -->
+                            <!-- for="remember_me" links this label to the checkbox -->
+                            <!-- form-check-label: Bootstrap styling for checkbox labels -->
+                            <label for="remember_me" class="form-check-label">
+                                Remember me for 30 days
+                            </label>
+                        </div>
                     </div>
 
                     
