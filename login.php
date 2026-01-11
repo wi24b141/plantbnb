@@ -24,7 +24,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 ?>
 <!DOCTYPE html>
 <html lang="en">
-<?php include __DIR__ . '/includes/head-includes.php'; ?>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - plantbnb</title>
+    <?php include __DIR__ . '/includes/head-includes.php'; ?>
+</head>
 <body>
     <header class="container text-center my-4">
         <h1 class="site-brand" id="site-title">
@@ -50,6 +55,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <button type="submit" class="btn btn-success">Login</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </main>
+
     <?php include __DIR__ . '/includes/footer.php'; ?>
 </body>
 </html>
