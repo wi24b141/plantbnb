@@ -1,22 +1,9 @@
 <?php
-/**
- * Offer Listing Creator - PlantBnB
- * 
- * Allows verified users to create "offer" type listings where they advertise
- * their availability to provide plant care services to others.
- * 
- * @requires header.php - Navigation and Bootstrap dependencies
- * @requires user-auth.php - Session validation and authentication
- * @requires db.php - PDO database connection
- * @requires file-upload-helper.php - File handling utilities (not used for offers)
- */
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/file-upload-helper.php';
 
-// NOTE: intval() provides type safety by ensuring user_id is strictly an integer,
-// preventing type juggling vulnerabilities in comparisons and queries.
 $userID = intval($_SESSION['user_id']);
 
 // Initialize form variables to prevent "undefined variable" notices and support form persistence.
@@ -37,12 +24,7 @@ $lightNeeds = '';
 $errors = [];
 $successMessage = '';
 
-/**
- * Form Submission Handler
- * 
- * Processes POST requests containing offer listing data. Validates all inputs
- * before persisting to the database.
- */
+// Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Retrieve and sanitize input using null coalescing operator (??) for safe defaults.
@@ -58,15 +40,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $plantType = trim($_POST['plant_type'] ?? '');
     $wateringNeeds = trim($_POST['watering_needs'] ?? '');
     $lightNeeds = trim($_POST['light_needs'] ?? '');
-
-    /**
-     * Server-Side Input Validation
-     * 
-     * NOTE: Client-side validation (HTML5 required attributes) provides UX feedback,
-     * but server-side validation is critical for security. Attackers can bypass
-     * client-side checks by manipulating HTTP requests directly.
-     */
     
+    // ============================================
+    // SERVER-SIDE VALIDATION
+    // ============================================
+    // NOTE: Server-side validation is essential because client-side validation can be bypassed
+
     // Enforce listing type constraint for this specific form.
     if ($listingType !== 'offer') {
         $errors[] = 'Invalid listing type.';

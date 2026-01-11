@@ -1,25 +1,13 @@
 <?php
-/**
- * Create Need Listing Page
- * 
- * Allows authenticated users to create a new "need" listing requesting plant care services.
- * Handles form validation, file uploads, and database insertion with proper security measures.
- * 
- * @requires header.php Bootstrap layout and navigation
- * @requires user-auth.php Session validation and authentication
- * @requires db.php PDO database connection
- * @requires file-upload-helper.php Secure file upload functionality
- */
-
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/file-upload-helper.php';
 
-// NOTE: intval() provides type safety by ensuring user_id is an integer, preventing type juggling vulnerabilities
 $userID = intval($_SESSION['user_id']);
 
-// Initialize form fields to preserve user input on validation failure
+// Initialize form variables to prevent "undefined variable" notices and support form persistence.
+// Pre-populating with empty strings ensures clean re-rendering after validation failures.
 $listingType = 'need';
 $title = '';
 $description = '';
@@ -32,15 +20,15 @@ $plantType = '';
 $wateringNeeds = '';
 $lightNeeds = '';
 
-// Initialize validation error array and success message
+// Separate error array from success string to accommodate multiple validation issues.
 $errors = [];
 $successMessage = '';
 
 // Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // Retrieve and sanitize form inputs using null coalescing operator for defaults
-    // NOTE: trim() prevents whitespace-only submissions and normalizes user input
+    // Retrieve and sanitize input using null coalescing operator (??) for safe defaults.
+    // trim() prevents whitespace-based validation bypasses.
     $listingType = trim($_POST['listing_type'] ?? '');
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
@@ -53,11 +41,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $wateringNeeds = trim($_POST['watering_needs'] ?? '');
     $lightNeeds = trim($_POST['light_needs'] ?? '');
 
-    // ============================================
+
     // SERVER-SIDE VALIDATION
-    // ============================================
     // NOTE: Server-side validation is essential because client-side validation can be bypassed
-    
     // Validate listing type matches expected value for this form
     if ($listingType !== 'need') {
         $errors[] = 'Invalid listing type.';
@@ -119,11 +105,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // ============================================
     // FILE UPLOAD PROCESSING
-    // ============================================
     // NOTE: File upload helper validates MIME types and file size to prevent malicious uploads
-    
     // Process optional listing photo (JPEG/PNG only, max 3MB)
     $listingPhotoResult = uploadFile(
         'listing_photo',
@@ -156,10 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // ============================================
     // DATABASE TRANSACTION
-    // ============================================
-    
     // Proceed with database insertion only if validation passed
     if (empty($errors)) {
         // NOTE: try-catch blocks handle PDOException for graceful error handling

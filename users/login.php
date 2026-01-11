@@ -1,6 +1,6 @@
 <?php
-require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/header.php';
 
 // Initialize error message variable for form validation feedback
 $loginError = '';
@@ -76,10 +76,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 }
 ?>
 
-<!-- ============================================================ -->
-<!-- HTML Presentation Layer: Login Form                          -->
-<!-- ============================================================ -->
-
+<!-- HTML Presentation Layer: Login Form -->
 <!DOCTYPE html>
 <html lang="en">
 <head>

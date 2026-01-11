@@ -1,11 +1,10 @@
 <?php
+require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/header.php';
 
 // Process cookie invalidation before session destruction to maintain database connection context
 if (isset($_COOKIE['remember_token'])) {
     $cookieToken = $_COOKIE['remember_token'];
-    
-    require_once __DIR__ . '/../includes/db.php';
     
     // Invalidate remember token in database to prevent reuse
     // NOTE: PDO prepared statements protect against SQL injection by separating SQL logic from user data

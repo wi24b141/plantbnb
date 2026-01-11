@@ -134,9 +134,7 @@ $markReadStatement->execute();
         <!-- Page heading with recipient username (XSS protection via htmlspecialchars) -->
         <h1 class="mb-4">Conversation with <?php echo htmlspecialchars($otherUser['username']); ?></h1>
 
-        <!-- ======================================================== -->
         <!-- MESSAGE DISPLAY SECTION -->
-        <!-- ======================================================== -->
         <!-- Bootstrap "card" component provides structured content container with header/body sections -->
         <div class="card mb-4">
             <div class="card-header">
@@ -181,9 +179,7 @@ $markReadStatement->execute();
             </div>
         </div>
 
-        <!-- ======================================================== -->
         <!-- REPLY FORM SECTION -->
-        <!-- ======================================================== -->
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">Send a Reply</h5>

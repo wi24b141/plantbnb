@@ -5,10 +5,6 @@ $databaseName = 'plantbnb3';
 $databaseUser = 'root';
 $databasePassword = '';
 
-// NOTE: Using PDO (PHP Data Objects) instead of mysqli because PDO provides:
-// 1. Database-agnostic interface (can switch from MySQL to PostgreSQL easily)
-// 2. Native support for prepared statements (prevents SQL injection)
-// 3. Better exception handling through PDOException class
 try {
     // Establish connection using DSN (Data Source Name) format
     $connection = new PDO ('mysql:host=' . $databaseHost . ';dbname=' . $databaseName, $databaseUser, $databasePassword);

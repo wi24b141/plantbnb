@@ -4,8 +4,6 @@ require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/file-upload-helper.php';
 
-// NOTE: user-auth.php enforces session-based authentication, preventing unauthorized access
-// intval() ensures type safety and prevents potential injection attacks
 $userID = intval($_SESSION['user_id']);
 
 // Initialize state variables for page rendering and error handling

@@ -3,13 +3,16 @@ require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/admin-auth.php';
 require_once __DIR__ . '/../includes/db.php';
 
+// Validate that a user_id was provided in the URL
 if (!isset($_GET['user_id'])) {
     header('Location: admin-dashboard.php');
     exit();
 }
 
+// NOTE: intval() sanitizes the input by converting to integer, preventing injection attacks
 $userToDeleteID = intval($_GET['user_id']);
 
+// Security check: Prevent admin from deleting their own account
 if ($userToDeleteID === $currentUserID) {
     header('Location: admin-dashboard.php');
     exit();
@@ -19,7 +22,9 @@ $userToDelete = null;
 
 $errorMessage = '';
 
+// Query database to retrieve user information before deletion
 try {
+    // Retrieve user details to display on confirmation page
     $userQuery = "
         SELECT 
             user_id,
@@ -30,57 +35,54 @@ try {
         WHERE user_id = :userID
     ";
     
+    // NOTE: prepare() creates a prepared statement, protecting against SQL Injection attacks
     $userStatement = $connection->prepare($userQuery);
     
+    // NOTE: bindParam() binds the variable to the placeholder, enforcing type safety with PDO::PARAM_INT
     $userStatement->bindParam(':userID', $userToDeleteID, PDO::PARAM_INT);
     
     $userStatement->execute();
     
+    // Fetch user data as associative array
     $userToDelete = $userStatement->fetch(PDO::FETCH_ASSOC);
     
-    // Check if user was found
     if (!$userToDelete) {
-        // User not found - redirect back
+        // User does not exist - redirect to prevent further processing
         header('Location: admin-dashboard.php');
         exit();
     }
     
 } catch (PDOException $error) {
-    // Database error
+    // Handle database exceptions by storing error message for display
     $errorMessage = "Database error: " . $error->getMessage();
 }
 
-// ============================================
-// STEP 6: HANDLE FORM SUBMISSION (DELETE USER)
-// ============================================
-
-// Check if the form was submitted
+/**
+ * Process user deletion request
+ * 
+ * Implements cascading deletion to maintain referential integrity by removing
+ * all associated records before deleting the user account.
+ */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // Check if the confirm button was clicked
     if (isset($_POST['confirm_delete'])) {
-        // Admin confirmed deletion
         
         try {
-            // When we delete a user, we need to delete all their related data
-            // This is called "cascading delete"
-            // We delete in this order:
-            // 1. User's messages (both sent and received)
-            // 2. User's favorites
-            // 3. User's plants (linked to their listings)
-            // 4. User's listings
-            // 5. Finally, the user account itself
+            // NOTE: Cascading delete maintains referential integrity by removing dependent records first.
+            // This prevents orphaned records and foreign key constraint violations.
+            // Order matters: delete child records before parent records.
             
-            // DELETE STEP 1: Delete all messages where user is sender or receiver
+            // Step 1: Delete messages (user is either sender or receiver)
             $deleteMessagesQuery = "
                 DELETE FROM messages
                 WHERE sender_id = :userID OR receiver_id = :userID
             ";
+            // NOTE: Prepared statements protect against SQL Injection by separating SQL logic from data
             $deleteMessagesStatement = $connection->prepare($deleteMessagesQuery);
             $deleteMessagesStatement->bindParam(':userID', $userToDeleteID, PDO::PARAM_INT);
             $deleteMessagesStatement->execute();
             
-            // DELETE STEP 2: Delete all favorites created by this user
+            // Step 2: Delete favorite listings marked by this user
             $deleteFavoritesQuery = "
                 DELETE FROM favorites
                 WHERE user_id = :userID
@@ -89,8 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deleteFavoritesStatement->bindParam(':userID', $userToDeleteID, PDO::PARAM_INT);
             $deleteFavoritesStatement->execute();
             
-            // DELETE STEP 3: Get all listing IDs that belong to this user
-            // We need these IDs to delete the plants table entries
+            // Step 3: Retrieve listing IDs owned by user (needed for plant deletion)
             $getUserListingsQuery = "
                 SELECT listing_id FROM listings WHERE user_id = :userID
             ";
@@ -99,8 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $getUserListingsStatement->execute();
             $userListings = $getUserListingsStatement->fetchAll(PDO::FETCH_ASSOC);
             
-            // DELETE STEP 4: Delete plants for each of the user's listings
-            // We loop through each listing and delete its plants
+            // Step 4: Delete plants associated with each listing
+            // NOTE: This demonstrates understanding of many-to-one relationships (plants → listings)
             foreach ($userListings as $listing) {
                 $deletePlantsQuery = "
                     DELETE FROM plants
@@ -111,7 +112,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $deletePlantsStatement->execute();
             }
             
-            // DELETE STEP 5: Delete all listings by this user
+            // Step 5: Delete all listings owned by the user
             $deleteListingsQuery = "
                 DELETE FROM listings
                 WHERE user_id = :userID
@@ -120,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deleteListingsStatement->bindParam(':userID', $userToDeleteID, PDO::PARAM_INT);
             $deleteListingsStatement->execute();
             
-            // DELETE STEP 6: Finally, delete the user account itself
+            // Step 6: Finally, delete the user account
             $deleteUserQuery = "
                 DELETE FROM users
                 WHERE user_id = :userID
@@ -129,13 +130,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deleteUserStatement->bindParam(':userID', $userToDeleteID, PDO::PARAM_INT);
             $deleteUserStatement->execute();
             
-            // Success! User and all related data deleted
-            // Redirect back to admin dashboard
+            // Redirect to dashboard upon successful deletion
             header('Location: admin-dashboard.php');
             exit();
             
         } catch (PDOException $error) {
-            // Database error during deletion
+            // NOTE: PDOException handling prevents application crashes and provides user feedback
             $errorMessage = "Failed to delete user: " . $error->getMessage();
         }
     }
@@ -146,23 +146,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Character encoding -->
     <meta charset="UTF-8">
-    
-    <!-- Mobile-friendly viewport -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- Page title -->
     <title>Delete User - Admin Panel</title>
 </head>
 <body>
-    <!-- Container -->
+    <!-- Main container: mt-4 applies top margin for spacing from navbar -->
     <div class="container mt-4">
         
-        <!-- ============================================ -->
-        <!-- SECTION 1: BACK BUTTON -->
-        <!-- ============================================ -->
-        
+        <!-- Navigation: Back button -->
         <div class="row mb-3">
             <div class="col-12">
                 <a href="admin-dashboard.php" class="btn btn-outline-secondary btn-sm">
@@ -171,12 +163,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
-        <!-- ============================================ -->
-        <!-- SECTION 2: ERROR MESSAGE (IF ANY) -->
-        <!-- ============================================ -->
-        
+        <!-- Error display section -->
         <?php
-            // Show error message if there is one
+            // Display error alert if database operation failed
+            // NOTE: htmlspecialchars() prevents XSS attacks by escaping HTML special characters
             if (!empty($errorMessage)) {
                 echo "<div class=\"alert alert-danger\" role=\"alert\">";
                 echo htmlspecialchars($errorMessage);
@@ -184,32 +174,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         ?>
 
-        <!-- ============================================ -->
-        <!-- SECTION 3: CONFIRMATION CARD -->
-        <!-- ============================================ -->
-        
+        <!-- Deletion confirmation interface -->
         <div class="row mb-5">
-            <!-- col-12 = full width on mobile -->
-            <!-- col-md-8 = 8/12 width on desktop -->
-            <!-- offset-md-2 = center on desktop -->
+            <!-- Uses Bootstrap grid: col-md-8 offset-md-2 centers the card on medium+ screens -->
             <div class="col-12 col-md-8 offset-md-2">
                 
-                <!-- card = Bootstrap box component -->
                 <div class="card shadow">
                     
-                    <!-- Card header with red background (danger color) -->
-                    <!-- Red indicates this is a dangerous action -->
+                    <!-- bg-danger indicates destructive action requiring careful consideration -->
                     <div class="card-header bg-danger text-white">
                         <h3 class="mb-0">Delete User Account</h3>
                     </div>
 
                     <div class="card-body">
                         
-                        <!-- ============================================ -->
-                        <!-- SUBSECTION 3A: WARNING MESSAGE -->
-                        <!-- ============================================ -->
-                        
-                        <!-- alert-warning = yellow/orange warning box -->
+                        <!-- Warning: Informs admin of irreversible consequences -->
                         <div class="alert alert-warning" role="alert">
                             <h5 class="alert-heading">Warning: This action cannot be undone!</h5>
                             <p class="mb-0">
@@ -223,18 +202,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </ul>
                         </div>
 
-                        <!-- ============================================ -->
-                        <!-- SUBSECTION 3B: USER INFORMATION -->
-                        <!-- ============================================ -->
-                        
+                        <!-- User details display -->
                         <div class="my-4">
                             <h5 class="mb-3">User to Delete:</h5>
                             
-                            <!-- bg-light = light gray background -->
-                            <!-- p-3 = padding all around -->
-                            <!-- rounded = rounded corners -->
+                            <!-- bg-light p-3 rounded: Creates visually distinct information box -->
                             <div class="bg-light p-3 rounded">
-                                <!-- list-unstyled = removes bullet points from list -->
                                 <ul class="list-unstyled mb-0">
                                     <li><strong>Username:</strong> <?php echo htmlspecialchars($userToDelete['username']); ?></li>
                                     <li><strong>Email:</strong> <?php echo htmlspecialchars($userToDelete['email']); ?></li>
@@ -242,7 +215,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <li>
                                         <strong>Role:</strong>
                                         <?php
-                                            // Show role with colored badge
+                                            // Display role with Bootstrap badge component for visual distinction
                                             if ($userToDelete['role'] === 'admin') {
                                                 echo "<span class=\"badge bg-danger\">Admin</span>";
                                             } else {
@@ -254,18 +227,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
 
-                        <!-- ============================================ -->
-                        <!-- SUBSECTION 3C: CONFIRMATION BUTTONS -->
-                        <!-- ============================================ -->
-                        
+                        <!-- Action buttons: Cancel and Confirm -->
                         <div class="row g-2">
                             
-                            <!-- Cancel button column -->
-                            <!-- col-12 = full width on mobile (buttons stack) -->
-                            <!-- col-md-6 = half width on desktop (side by side) -->
+                            <!-- Cancel option: col-md-6 creates responsive two-column layout on desktop -->
                             <div class="col-12 col-md-6">
-                                <!-- Link to go back without deleting -->
-                                <!-- d-grid makes link full width of its column -->
+                                <!-- d-grid makes button expand to full column width -->
                                 <div class="d-grid">
                                     <a href="admin-dashboard.php" class="btn btn-secondary btn-lg">
                                         Cancel
@@ -273,13 +240,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </div>
                             </div>
 
-                            <!-- Delete button column -->
+                            <!-- Delete confirmation -->
                             <div class="col-12 col-md-6">
-                                <!-- Form to submit the deletion -->
+                                <!-- POST method ensures idempotency and prevents accidental deletion via URL -->
                                 <form method="POST" action="">
                                     <div class="d-grid">
-                                        <!-- name="confirm_delete" = how we detect button click in PHP -->
-                                        <!-- btn-danger = red button -->
+                                        <!-- NOTE: Using named submit button allows detection via isset($_POST['confirm_delete']) -->
                                         <button type="submit" name="confirm_delete" class="btn btn-danger btn-lg">
                                             Confirm Delete
                                         </button>
@@ -289,10 +255,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
 
                     </div>
+                    <!-- End card-body -->
                 </div>
+                <!-- End card -->
             </div>
         </div>
 
     </div>
+    <!-- End container -->
 </body>
 </html>

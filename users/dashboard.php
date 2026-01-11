@@ -70,10 +70,8 @@ try {
 
 ?>
 
-<!-- ============================================================ -->
-<!-- HTML Presentation Layer: User Dashboard                      -->
-<!-- ============================================================ -->
 
+<!-- HTML Presentation Layer: User Dashboard                      -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -145,7 +143,7 @@ try {
                                         <?php echo $safeUsername; ?>
                                         <?php
                                             if ($avgRating !== null) {
-                                                echo ' <span class="badge bg-warning text-dark ms-2">⭐ ' . htmlspecialchars($avgRating) . '</span>';
+                                                echo ' <span class="badge bg-primary text-white ms-2">⭐ ' . htmlspecialchars($avgRating) . '</span>';
                                                 if ($ratingCount > 0) {
                                                     echo ' <small class="text-muted">(' . $ratingCount . ')</small>';
                                                 }
@@ -212,38 +210,35 @@ try {
                     <h3>Quick Actions</h3>
                 </div>
 
-                <!-- Bootstrap grid: col-12 (full width mobile), col-md-4 (33.33% on medium+ screens)
-                     Creates 3-column layout on desktop, stacked on mobile -->
-                <div class="col-12 col-md-4">
-                    <!-- text-decoration-none removes default link underline -->
-                    <a href="/plantbnb/listings/listings.php" class="text-decoration-none">
-                        <div class="card shadow-sm h-100 text-center p-3">
-                            <div class="mb-2" style="font-size: 2.5rem;">
-                                📋
-                            </div>
-                            <h5 class="card-title">Browse Listings</h5>
-                            <p class="card-text small text-muted mb-0">
-                                Browse all plant listings
-                            </p>
-                        </div>
-                    </a>
-                </div>
-
-                <div class="col-12 col-md-4">
-                    <a href="/plantbnb/listings/listing-creator.php" class="text-decoration-none">
+                <div class="col-12 col-md-3">
+                    <a href="/plantbnb/listings/listing-creator_need.php" class="text-decoration-none">
                         <div class="card shadow-sm h-100 text-center p-3">
                             <div class="mb-2" style="font-size: 2.5rem;">
                                 ➕
                             </div>
-                            <h5 class="card-title">Create Listing</h5>
+                            <h5 class="card-title">Create Need</h5>
                             <p class="card-text small text-muted mb-0">
-                                Post a new plant offer or request
+                                Post a new plant care need
                             </p>
                         </div>
                     </a>
                 </div>
 
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-3">
+                    <a href="/plantbnb/listings/listing-creator_offer.php" class="text-decoration-none">
+                        <div class="card shadow-sm h-100 text-center p-3">
+                            <div class="mb-2" style="font-size: 2.5rem;">
+                                🌱
+                            </div>
+                            <h5 class="card-title">Create Offer</h5>
+                            <p class="card-text small text-muted mb-0">
+                                Post a new plant care offer
+                            </p>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="col-12 col-md-3">
                     <a href="/plantbnb/listings/my-listings.php" class="text-decoration-none">
                         <div class="card shadow-sm h-100 text-center p-3">
                             <div class="mb-2" style="font-size: 2.5rem;">
@@ -255,7 +250,7 @@ try {
                     </a>
                 </div>
 
-                <div class="col-12 col-md-4">
+                <div class="col-12 col-md-3">
                     <a href="/plantbnb/users/verification.php" class="text-decoration-none">
                         <div class="card shadow-sm h-100 text-center p-3">
                             <div class="mb-2" style="font-size: 2.5rem;">

@@ -3,8 +3,6 @@ require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';
 
-// Retrieve authenticated user ID from session
-// NOTE: intval() type-casts the session value to an integer, preventing type juggling vulnerabilities.
 $currentUserID = intval($_SESSION['user_id']);
 
 // Initialize output variables to prevent undefined variable notices
