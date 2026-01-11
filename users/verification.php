@@ -4,20 +4,20 @@ require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/file-upload-helper.php';
 
-
-
+// NOTE: user-auth.php enforces session-based authentication, preventing unauthorized access
+// intval() ensures type safety and prevents potential injection attacks
 $userID = intval($_SESSION['user_id']);
 
-
+// Initialize state variables for page rendering and error handling
 $user = null;
 $currentVerificationDocPath = '';
 $isVerified = 0;
 $successMessage = '';
 $errorMessage = '';
 
-
+// NOTE: PDO prepared statements protect against SQL injection by separating query logic from data
 try {
-    
+    // Retrieve current user verification status and document path
     $userQuery = "
         SELECT 
             user_id,
@@ -29,20 +29,20 @@ try {
         WHERE user_id = :userID
     ";
 
-    
+    // Prepared statement with parameterized query prevents SQL injection attacks
     $userStatement = $connection->prepare($userQuery);
     $userStatement->bindParam(':userID', $userID, PDO::PARAM_INT);
     $userStatement->execute();
     $user = $userStatement->fetch(PDO::FETCH_ASSOC);
 
-    
+    // Enforce session integrity: invalid user_id terminates session
     if (!$user) {
         session_destroy();
         header('Location: login.php');
         exit();
     }
 
-    
+    // Normalize null values for consistent state handling
     if ($user['is_verified'] === null) {
         $isVerified = 0;
     } else {
@@ -56,25 +56,25 @@ try {
     }
 
 } catch (PDOException $error) {
-    
+    // Centralized exception handling for database errors
     $errorMessage = "Database error: " . $error->getMessage();
 }
 
-
+// Process POST request for verification document upload
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     $newVerificationDocPath = $currentVerificationDocPath;
 
-    
-    
+    // NOTE: File upload security implemented via uploadFile() helper includes MIME type validation,
+    // file size restrictions, and path sanitization to prevent directory traversal attacks
     $verificationDocResult = uploadFile(
         'verification_document',
         __DIR__ . '/../uploads/verification',
         ['image/jpeg', 'image/png', 'application/pdf'],
-        5 * 1024 * 1024  
+        5 * 1024 * 1024  // 5MB maximum file size
     );
 
-    
+    // Validate upload result and handle errors
     if (is_string($verificationDocResult) && strpos($verificationDocResult, '/') === false) {
         $errorMessage = "Verification document: " . $verificationDocResult;
         
@@ -85,12 +85,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errorMessage = "Please select an ID document to upload.";
     }
 
-    
+    // Persist document path to database only after successful upload
     if (empty($errorMessage)) {
         
         try {
-            
-            
+            // NOTE: Verification workflow separates document submission from approval - users upload,
+            // administrators manually verify. This maintains security and prevents self-verification
             $updateQuery = "
                 UPDATE users
                 SET 
@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE user_id = :userID
             ";
 
-            
+            // PDO prepared statement prevents SQL injection via parameterized queries
             $updateStatement = $connection->prepare($updateQuery);
             $updateStatement->bindParam(':verificationDocPath', $newVerificationDocPath, PDO::PARAM_STR);
             $updateStatement->bindParam(':userID', $userID, PDO::PARAM_INT);
@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Success feedback message -->
         <?php
             if (!empty($successMessage)) {
-                
+                // NOTE: htmlspecialchars() prevents XSS attacks by encoding special HTML characters
                 echo "<div class=\"alert alert-success\" role=\"alert\">";
                 echo htmlspecialchars($successMessage);
                 echo "</div>";
@@ -149,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Error feedback message -->
         <?php
             if (!empty($errorMessage)) {
-                
+                // XSS mitigation via output encoding
                 echo "<div class=\"alert alert-danger\" role=\"alert\">";
                 echo htmlspecialchars($errorMessage);
                 echo "</div>";
@@ -175,7 +175,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <div class="text-center">
                                 <?php
-                                    
+                                    // Display contextual alert based on verification state
                                     if ($isVerified == 1) {
                                         echo "<div class=\"alert alert-success\" role=\"alert\">";
                                         echo "  <h4 class=\"alert-heading\">Verified Account</h4>";
@@ -257,7 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <?php
                             } else {
-                                
+                                // Display confirmation message for verified users
                                 echo "<div class=\"alert alert-success text-center\" role=\"alert\">";
                                 echo "  <p class=\"mb-0\">Your account is fully verified! No further action is needed.</p>";
                                 echo "</div>";

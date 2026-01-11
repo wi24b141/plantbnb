@@ -3,23 +3,23 @@ require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';
 
-
-
+// Retrieve authenticated user ID from session
+// NOTE: intval() type-casts the session value to an integer, preventing type juggling vulnerabilities.
 $currentUserID = intval($_SESSION['user_id']);
 
-
+// Initialize output variables to prevent undefined variable notices
 $allUsers = [];
 $successMessage = '';
 $errorMessage = '';
 
-
+// Process POST request when rating form is submitted
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    
+    // Sanitize and type-cast user input to prevent injection attacks
     $ratedUserID = intval($_POST['rated_user_id']);
     $rating = intval($_POST['rating']);
     
-    
+    // Server-side validation to enforce business rules
     if ($ratedUserID === 0) {
         $errorMessage = 'Please select a user to rate.';
     }
@@ -31,12 +31,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     else {
         
-        
+        // NOTE: PDO exceptions are caught to prevent sensitive database information from being exposed to users.
         try {
-            
+            // Check for duplicate ratings to maintain data integrity
             $checkQuery = "SELECT rating_id FROM ratings WHERE rater_user_id = :raterUserID AND rated_user_id = :ratedUserID";
             
-            
+            // NOTE: Using PDO prepared statements protects against SQL Injection attacks.
             $checkStmt = $connection->prepare($checkQuery);
             $checkStmt->bindParam(':raterUserID', $currentUserID, PDO::PARAM_INT);
             $checkStmt->bindParam(':ratedUserID', $ratedUserID, PDO::PARAM_INT);
@@ -45,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($checkStmt->fetch(PDO::FETCH_ASSOC)) {
                 $errorMessage = 'You have already rated this user.';
             } else {
-                
+                // Insert new rating record with parameterized query
                 $insertQuery = "
                     INSERT INTO ratings 
                     (rater_user_id, rated_user_id, rating)
@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     (:raterUserID, :ratedUserID, :rating)
                 ";
 
-                
+                // Prepared statement with explicit data type binding (PDO::PARAM_INT)
                 $insertStatement = $connection->prepare($insertQuery);
                 $insertStatement->bindParam(':raterUserID', $currentUserID, PDO::PARAM_INT);
                 $insertStatement->bindParam(':ratedUserID', $ratedUserID, PDO::PARAM_INT);
@@ -64,16 +64,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
         } catch (PDOException $error) {
-            
+            // Generic error message prevents information disclosure
             $errorMessage = 'Database error: ' . $error->getMessage();
         }
     }
 }
 
-
+// Retrieve all users except the current user for the rating dropdown
 try {
     
-    
+    // Query filters out current user to prevent self-rating
     $usersQuery = "
         SELECT 
             user_id,
@@ -83,12 +83,12 @@ try {
         ORDER BY username ASC
     ";
     
-    
+    // NOTE: Prepared statement with bound parameter prevents SQL Injection.
     $usersStatement = $connection->prepare($usersQuery);
     $usersStatement->bindParam(':currentUserID', $currentUserID, PDO::PARAM_INT);
     $usersStatement->execute();
     
-    
+    // Fetch result set as associative array for dropdown population
     $allUsers = $usersStatement->fetchAll(PDO::FETCH_ASSOC);
     
 } catch (PDOException $error) {
@@ -115,7 +115,7 @@ try {
         <?php
             if (!empty($successMessage)) {
                 echo '<div class="alert alert-success" role="alert">';
-                
+                // NOTE: htmlspecialchars() prevents Cross-Site Scripting (XSS) by encoding HTML special characters.
                 echo htmlspecialchars($successMessage);
                 echo '</div>';
             }
@@ -125,7 +125,7 @@ try {
         <?php
             if (!empty($errorMessage)) {
                 echo '<div class="alert alert-danger" role="alert">';
-                
+                // Sanitize output to prevent XSS vulnerabilities
                 echo htmlspecialchars($errorMessage);
                 echo '</div>';
             }
@@ -152,10 +152,10 @@ try {
                                     <option value="">-- Choose a user --</option>
                                     
                                     <?php
-                                        
+                                        // Dynamically populate dropdown from database query results
                                         foreach ($allUsers as $user) {
                                             $userID = intval($user['user_id']);
-                                            
+                                            // Sanitize username to prevent XSS in dropdown options
                                             $username = htmlspecialchars($user['username']);
                                             
                                             echo '<option value="' . $userID . '">' . $username . '</option>';

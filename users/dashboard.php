@@ -3,18 +3,18 @@ require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';
 
-
-
+// Retrieve authenticated user's ID from session
+// NOTE: intval() ensures integer type, preventing type juggling vulnerabilities
 $userID = intval($_SESSION['user_id']);
 
-
+// Initialize variables to prevent undefined variable notices
 $user = null;
 $errorMessage = '';
 
-
-
+// Retrieve user profile data from database with error handling
+// NOTE: try-catch block handles PDOException to prevent application crashes from database errors
 try {
-    
+    // Query user record with all profile fields
     $userQuery = "
         SELECT 
             user_id,
@@ -28,14 +28,14 @@ try {
         WHERE user_id = :userID
     ";
 
-    
+    // NOTE: PDO prepared statements protect against SQL injection by separating SQL logic from data
     $userStatement = $connection->prepare($userQuery);
     $userStatement->bindParam(':userID', $userID, PDO::PARAM_INT);
     $userStatement->execute();
     
     $user = $userStatement->fetch(PDO::FETCH_ASSOC);
 
-    
+    // Terminate session if user record not found (data integrity issue)
     if (!$user) {
         session_destroy();
         header('Location: login.php');
@@ -46,11 +46,11 @@ try {
     $errorMessage = "Database error: " . $error->getMessage();
 }
 
-
+// Calculate user's reputation metrics from ratings table
 $avgRating = null;
 $ratingCount = 0;
 try {
-    
+    // Aggregate query using AVG() and COUNT() for rating statistics
     $ratingQuery = "
         SELECT AVG(rating) AS avg_rating, COUNT(*) AS rating_count
         FROM ratings
@@ -65,7 +65,7 @@ try {
         $ratingCount = intval($ratingRow['rating_count']);
     }
 } catch (PDOException $error) {
-    
+    // Graceful degradation: profile displays without ratings if query fails
 }
 
 ?>
@@ -88,7 +88,7 @@ try {
         <!-- Error display section with Bootstrap alert styling -->
         <?php
             if (!empty($errorMessage)) {
-                
+                // NOTE: htmlspecialchars() prevents XSS attacks by escaping HTML entities
                 echo "<div class=\"alert alert-danger\" role=\"alert\">";
                 echo htmlspecialchars($errorMessage);
                 echo "</div>";
@@ -126,16 +126,16 @@ try {
                                     $profilePhoto = $user['profile_photo_path'] ?? '';
                                     
                                     if (!empty($profilePhoto)) {
-                                        
+                                        // Construct relative path from users/ to uploads/profiles/
                                         $profilePhotoPath = '../' . htmlspecialchars($profilePhoto);
                                         
-                                        
-                                        
+                                        // Bootstrap rounded-circle class creates circular crop
+                                        // object-fit: cover prevents image distortion
                                         echo "<img src=\"" . $profilePhotoPath . "\" alt=\"" . $safeUsername . "'s profile photo\" class=\"rounded-circle\" style=\"width: 80px; height: 80px; object-fit: cover;\">";
                                         
                                     } else {
-                                        
-                                        echo "<img src=\"https:
+                                        // Fallback placeholder image for users without uploaded photo
+                                        echo "<img src=\"https://via.placeholder.com/80?text=No+Photo\" alt=\"Default profile placeholder\" class=\"rounded-circle\" style=\"width: 80px; height: 80px; object-fit: cover;\">";
                                     }
                                 ?>
 
@@ -178,7 +178,7 @@ try {
                                 if (!empty($safeBio)) {
                                     echo "<div class=\"mb-3\">";
                                     echo "  <small class=\"text-muted\"><strong>Bio</strong></small>";
-                                    
+                                    // NOTE: nl2br() converts newline characters to <br> tags, preserving formatting
                                     echo "  <p class=\"small mb-0\">" . nl2br($safeBio) . "</p>";
                                     echo "</div>";
                                 } else {

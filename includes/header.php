@@ -1,71 +1,71 @@
 <?php
-
-
+// NOTE: Session management - checks if session is already active to prevent errors
+// Ensures session_start() is only called once per request lifecycle
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-
-
+// Determines authentication state from session variable
+// This controls which navigation menu items are displayed to the user
 $isLoggedIn = isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] === true;
 
-
-
+// NOTE: Persistent login implementation - "Remember Me" functionality
+// If user is not logged in via session, check for a valid remember token cookie
 if (!$isLoggedIn) {
     if (isset($_COOKIE['remember_token'])) {
-        
+        // Retrieve the remember token from the cookie
         $rememberToken = $_COOKIE['remember_token'];
         
-        
+        // Include database connection using PDO
         require_once __DIR__ . '/db.php';
         
-        
-        
+        // NOTE: SQL Injection Protection - using PDO prepared statements with parameterized queries
+        // The :token placeholder prevents malicious SQL code from being injected via cookie manipulation
         $query = "SELECT user_id, username FROM users WHERE remember_token = :token";
         
-        
+        // Prepare the statement to protect against SQL injection
         $statement = $connection->prepare($query);
         
-        
+        // Bind the remember token parameter as a string type
         $statement->bindParam(':token', $rememberToken, PDO::PARAM_STR);
         
-        
+        // Execute the prepared statement safely
         $statement->execute();
         
-        
+        // Fetch user data as associative array
         $user = $statement->fetch(PDO::FETCH_ASSOC);
         
-        
-        
+        // NOTE: Session restoration from persistent cookie
+        // If valid token found, restore the user's session without requiring login
         if ($user) {
-            
+            // Restore session variables to maintain authentication state
             $_SESSION["loggedIn"] = true;
             $_SESSION["user_id"] = $user['user_id'];
             $_SESSION["username"] = $user['username'];
             
-            
+            // Update login status flag for navbar rendering
             $isLoggedIn = true;
 
         } else {
-            
-            
+            // Invalid or expired token - delete the cookie by setting expiration to past
+            // NOTE: Cookie deletion for security - prevents reuse of invalid tokens
             setcookie("remember_token", "", time() - 3600, "/");
         }
     }
 }
 
-
-
+// Retrieve username from session for display, defaulting to empty string if not set
+// The null coalescing operator (??) provides fallback for non-authenticated users
 $username = $_SESSION['username'] ?? '';
 
-
-
+// Extract current page filename to highlight active navigation link
+// basename() strips the directory path, leaving only the filename
 $currentPage = basename($_SERVER['PHP_SELF']);
 ?>
 
 <!-- ========== STYLESHEETS ========== -->
 <!-- Bootstrap 5.3.2 CDN for responsive layout and utility classes -->
-<link href="https:
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="" crossorigin="anonymous">
 <!-- Custom application styles -->
 <link rel="stylesheet" href="resources/css/style.css">
 

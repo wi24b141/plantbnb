@@ -4,50 +4,50 @@ require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';            
 require_once __DIR__ . '/../includes/file-upload-helper.php';  
 
-
-
-
-
-
+// STEP 2: Get the logged-in user's ID
+// $_SESSION is a special PHP array that remembers data across pages
+// intval() converts the value to an integer (whole number)
+// We use intval() for security: it ensures the value is a number, not text or code
+// Example: intval('42') = 42, intval('hello') = 0
 $userID = intval($_SESSION['user_id']);
 
+// ============================================
+// STEP 3: GET LISTING ID FROM URL
+// ============================================
+// We need to know WHICH listing the user wants to edit
+// The listing ID comes from the URL like: listing-editor.php?id=42
+// $_GET is a special PHP array that contains URL parameters
 
-
-
-
-
-
-
-
+// Check if 'id' exists in the URL
 if (!isset($_GET['id'])) {
-    
-    
+    // No ID in URL, cannot edit without knowing which listing
+    // We redirect the user back to the dashboard
     header('Location: /plantbnb/users/dashboard.php');
-    exit; 
+    exit; // exit stops the script immediately after redirect
 }
 
-
-
+// Get the listing ID from the URL and convert it to an integer
+// Example: If URL is listing-editor.php?id=42, then $listingID = 42
 $listingID = intval($_GET['id']);
 
-
+// Check if the ID is a valid positive number
 if ($listingID <= 0) {
-    
+    // Invalid ID (zero or negative), redirect to dashboard
     header('Location: /plantbnb/users/dashboard.php');
     exit;
 }
 
-
-
-
-
-
-
+// ============================================
+// STEP 4: FETCH EXISTING LISTING FROM DATABASE
+// ============================================
+// We need to get the current listing data to:
+// 1) Pre-fill the form so the user can see what they're editing
+// 2) Check that the logged-in user OWNS this listing (security!)
 
 try {
-    
-    
-    
+    // SQL query to get the listing
+    // We JOIN the plants table because we need plant details too
+    // We use WHERE to get only the specific listing by its ID
     $fetchQuery = "
         SELECT 
             listings.listing_id,
@@ -70,48 +70,48 @@ try {
         WHERE listings.listing_id = :listingID
     ";
     
-    
+    // Prepare the query
     $fetchStatement = $connection->prepare($fetchQuery);
     
-    
+    // Bind the listing ID parameter
     $fetchStatement->bindParam(':listingID', $listingID, PDO::PARAM_INT);
     
-    
+    // Execute the query
     $fetchStatement->execute();
     
-    
-    
-    
-    
+    // Fetch the result as an associative array
+    // fetch() gets ONE row from the database
+    // PDO::FETCH_ASSOC means "return data as an array with column names as keys"
+    // Example: $listing['title'] will contain the listing title
     $listing = $fetchStatement->fetch(PDO::FETCH_ASSOC);
     
-    
+    // Check if the listing exists
     if (!$listing) {
-        
+        // No listing found with this ID, redirect to dashboard
         header('Location: /plantbnb/users/dashboard.php');
         exit;
     }
     
-    
-    
+    // SECURITY CHECK: Make sure the logged-in user OWNS this listing
+    // We compare the user_id from the database with the logged-in user's ID
     if ($listing['user_id'] !== $userID) {
-        
-        
+        // This listing belongs to someone else!
+        // Redirect to dashboard (we don't let users edit other people's listings)
         header('Location: /plantbnb/users/dashboard.php');
         exit;
     }
     
 } catch (PDOException $error) {
-    
+    // If database error occurs, show error and stop
     die("Database error: " . htmlspecialchars($error->getMessage()));
 }
 
-
-
-
-
-
-
+// ============================================
+// STEP 5: PRE-FILL FORM VARIABLES WITH EXISTING DATA
+// ============================================
+// We initialize all form fields with the data we got from the database
+// This way, when the form is displayed, it will show the current values
+// The user can then change what they want and submit the form
 
 $listingType = $listing['listing_type'];
 $title = $listing['title'];
@@ -120,35 +120,35 @@ $locationApprox = $listing['location_approx'];
 $startDate = $listing['start_date'];
 $endDate = $listing['end_date'];
 
-
-
+// These fields might be NULL in the database (they are optional)
+// The ?? operator means "if this is null, use empty string instead"
 $experience = $listing['experience'] ?? '';
 $priceRange = $listing['price_range'] ?? '';
 
-
+// Plant fields might also be null if no plant was added
 $plantType = $listing['plant_type'] ?? '';
 $wateringNeeds = $listing['watering_needs'] ?? '';
 $lightNeeds = $listing['light_needs'] ?? '';
 
-
-
+// STEP 6: Initialize error and success message variables
+// We use an array for errors because there might be multiple errors
 $errors = [];
-
+// We use a simple string for success because there's only one success message
 $successMessage = '';
 
-
-
-
+// STEP 7: Check if the form was submitted
+// $_SERVER['REQUEST_METHOD'] tells us HOW the page was loaded
+// 'POST' means the user submitted a form (as opposed to 'GET' which is a normal page visit)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    
+    // The form was submitted, so we process the updates
 
+    // STEP 8: Get all form data from $_POST and trim whitespace
+    // $_POST is a special PHP array containing all form data
+    // trim() removes extra spaces before and after the text
+    // Example: trim('  hello  ') becomes 'hello'
     
-    
-    
-    
-    
-    
-    
+    // The ?? operator means "if not set, use this default value instead"
+    // Example: $_POST['title'] ?? '' means "use $_POST['title'], but if it doesn't exist, use empty string ''"
     
     $listingType = trim($_POST['listing_type'] ?? '');
     $title = trim($_POST['title'] ?? '');
@@ -162,32 +162,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $wateringNeeds = trim($_POST['watering_needs'] ?? '');
     $lightNeeds = trim($_POST['light_needs'] ?? '');
 
+    // ============================================
+    // STEP 9: VALIDATION LOGIC
+    // ============================================
+    // We check all the user's input BEFORE saving to the database
+    // If something is wrong, we add an error message to the $errors array
     
-    
-    
-    
-    
-    
-    
-    
+    // VALIDATION 1: Check listing type is valid (must be 'offer' or 'need')
+    // empty() checks if a variable is empty (blank, zero, or doesn't exist)
     if (empty($listingType)) {
-        
+        // The user didn't select anything
         $errors[] = 'Please select a valid listing type (Offer or Need).';
     } else {
-        
-        
+        // The user selected something, but is it valid?
+        // We only allow 'offer' or 'need'
         if ($listingType !== 'offer' && $listingType !== 'need') {
             $errors[] = 'Please select a valid listing type (Offer or Need).';
         }
     }
 
-    
+    // VALIDATION 2: Check title is not empty
     if (empty($title)) {
         $errors[] = 'Title is required.';
     } else {
-        
-        
-        
+        // Title exists, now check length
+        // strlen() counts the number of characters in a string
+        // Example: strlen('hello') = 5
         if (strlen($title) < 5) {
             $errors[] = 'Title must be at least 5 characters long.';
         }
@@ -196,140 +196,140 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    
+    // VALIDATION 3: Check description is not empty
     if (empty($description)) {
         $errors[] = 'Description is required.';
     } else {
-        
+        // Description exists, now check length
         if (strlen($description) < 20) {
             $errors[] = 'Description must be at least 20 characters long.';
         }
     }
 
-    
+    // VALIDATION 4: Check location is not empty
     if (empty($locationApprox)) {
         $errors[] = 'Location is required.';
     }
 
-    
+    // VALIDATION 5: Check start date is not empty
     if (empty($startDate)) {
         $errors[] = 'Start Date is required.';
     }
 
-    
+    // VALIDATION 6: Check end date is not empty
     if (empty($endDate)) {
         $errors[] = 'End Date is required.';
     }
 
-    
+    // VALIDATION 7: Check plant type is not empty
     if (empty($plantType)) {
         $errors[] = 'Plant Type is required.';
     }
 
-    
+    // VALIDATION 8: Check watering needs is not empty
     if (empty($wateringNeeds)) {
         $errors[] = 'Watering Needs is required.';
     }
 
-    
+    // VALIDATION 9: Check light needs is not empty
     if (empty($lightNeeds)) {
         $errors[] = 'Light Needs is required.';
     }
 
-    
-    
+    // VALIDATION 10: Check end date is after start date
+    // We only do this check if BOTH dates were filled in
     if (!empty($startDate) && !empty($endDate)) {
-        
-        
-        
+        // strtotime() converts a date string to a Unix timestamp (a big number representing seconds since 1970)
+        // Example: strtotime('2026-01-15') = 1768867200
+        // We convert both dates to numbers so we can compare them
         $startTimestamp = strtotime($startDate);
         $endTimestamp = strtotime($endDate);
         
-        
+        // Check if end date is BEFORE or EQUAL to start date (which is wrong)
         if ($endTimestamp <= $startTimestamp) {
             $errors[] = 'End date must be after start date.';
         }
     }
 
+    // ============================================
+    // STEP 10: HANDLE FILE UPLOADS (OPTIONAL)
+    // ============================================
+    // Note: File uploads are optional when editing
+    // If the user doesn't upload a new file, we keep the old file path
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    // UPLOAD 1: Listing photo (optional)
+    // uploadFile() is a custom function defined in file-upload-helper.php
+    // It returns:
+    //   - A file path string if upload was successful (e.g., "uploads/listings/photo123.jpg")
+    //   - An error message string if upload failed (e.g., "File is too large")
+    //   - null if no file was uploaded
     
     $listingPhotoResult = uploadFile(
-        'listing_photo',                           
-        __DIR__ . '/../uploads/listings',          
-        ['image/jpeg', 'image/png'],               
-        3 * 1024 * 1024                            
+        'listing_photo',                           // The name of the form field
+        __DIR__ . '/../uploads/listings',          // Where to save the file
+        ['image/jpeg', 'image/png'],               // Allowed file types
+        3 * 1024 * 1024                            // Max size = 3 MB (3 × 1024 × 1024 bytes)
     );
 
-    
-    
-    
-    $listingPhotoPath = $listing['listing_photo_path']; 
+    // Now we check if the upload failed
+    // If it's a string AND it doesn't contain a forward slash, it's an error message
+    // (Successful uploads return paths like "uploads/listings/photo.jpg" which contain /)
+    $listingPhotoPath = $listing['listing_photo_path']; // Keep old path by default
     if ($listingPhotoResult !== null) {
-        
+        // A file was uploaded (either success or error)
         if (strpos($listingPhotoResult, '/') === false) {
-            
+            // No forward slash found, so this is an error message
             $errors[] = "Listing photo: " . $listingPhotoResult;
         } else {
-            
-            
+            // Forward slash found, so this is a valid file path
+            // We replace the old photo with the new one
             $listingPhotoPath = $listingPhotoResult;
         }
     }
 
-    
+    // UPLOAD 2: Care sheet PDF (optional)
     $careSheetResult = uploadFile(
-        'care_sheet',                              
-        __DIR__ . '/../uploads/caresheets',        
-        ['application/pdf'],                       
-        3 * 1024 * 1024                            
+        'care_sheet',                              // The name of the form field
+        __DIR__ . '/../uploads/caresheets',        // Where to save the file
+        ['application/pdf'],                       // Allowed file types (only PDF)
+        3 * 1024 * 1024                            // Max size = 3 MB
     );
 
-    
-    $careSheetPath = $listing['care_sheet_path']; 
+    // Check if the upload failed (same logic as above)
+    $careSheetPath = $listing['care_sheet_path']; // Keep old path by default
     if ($careSheetResult !== null) {
-        
+        // A file was uploaded
         if (strpos($careSheetResult, '/') === false) {
-            
+            // This is an error message
             $errors[] = "Care sheet: " . $careSheetResult;
         } else {
-            
-            
+            // This is a valid file path
+            // We replace the old care sheet with the new one
             $careSheetPath = $careSheetResult;
         }
     }
 
+    // ============================================
+    // STEP 11: UPDATE THE DATABASE
+    // ============================================
     
-    
-    
-    
-    
-    
+    // Only insert into database if there are NO validation errors
+    // empty($errors) returns true if the array has no items in it
     if (empty($errors)) {
-        
-        
-        
+        // CRITICAL: We use try/catch for database operations
+        // If something goes wrong with the database, PHP will "throw" an error
+        // We "catch" that error and display it nicely instead of crashing the page
         try {
+            // STEP 11A: Update the listing in the listings table
             
-            
-            
-            
-            
-            
-            
-            
-            
-            
+            // This is our SQL query (the command we send to the database)
+            // UPDATE means "change an existing row in this table"
+            // We use SET to specify which columns to change
+            // We use WHERE to specify which row to change (by listing_id)
+            // We use :placeholders instead of putting values directly in the query
+            // Why? Security! This prevents "SQL Injection" attacks
+            // Example of SQL Injection: A hacker could type: ' OR '1'='1
+            // With placeholders, that text is treated as harmless text, not code
             
             $updateListingQuery = "
                 UPDATE listings 
@@ -347,17 +347,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE listing_id = :listingID
             ";
 
-            
-            
-            
-            
+            // STEP 11B: Prepare the query
+            // $connection is the database connection object from db.php
+            // prepare() gets the query ready but doesn't execute it yet
+            // This is like preparing a form letter with blanks to fill in
             $updateListingStatement = $connection->prepare($updateListingQuery);
 
-            
-            
-            
-            
-            
+            // STEP 11C: Bind parameters to the placeholders
+            // bindParam() connects each placeholder (:title) to a PHP variable ($title)
+            // PDO::PARAM_INT means "this is an integer (whole number)"
+            // PDO::PARAM_STR means "this is a string (text)"
+            // Think of this like filling in the blanks on the form letter
             
             $updateListingStatement->bindParam(':listingType', $listingType, PDO::PARAM_STR);
             $updateListingStatement->bindParam(':title', $title, PDO::PARAM_STR);
@@ -371,18 +371,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $updateListingStatement->bindParam(':priceRange', $priceRange, PDO::PARAM_STR);
             $updateListingStatement->bindParam(':listingID', $listingID, PDO::PARAM_INT);
 
-            
-            
-            
+            // STEP 11D: Execute the query
+            // This actually sends the command to the database
+            // The database will update the row with all our new data
             $updateListingStatement->execute();
 
+            // ============================================
+            // STEP 12: UPDATE PLANT ENTRY
+            // ============================================
             
-            
-            
-            
-            
-            
-            
+            // Now we update the plant details in the plants table
+            // We use UPDATE instead of INSERT because the plant entry already exists
+            // We find the plant entry by listing_id
             
             $updatePlantQuery = "
                 UPDATE plants 
@@ -393,28 +393,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE listing_id = :listingID
             ";
 
-            
+            // Prepare the plant update statement
             $updatePlantStatement = $connection->prepare($updatePlantQuery);
 
-            
+            // Bind the plant parameters
             $updatePlantStatement->bindParam(':plantType', $plantType, PDO::PARAM_STR);
             $updatePlantStatement->bindParam(':wateringNeeds', $wateringNeeds, PDO::PARAM_STR);
             $updatePlantStatement->bindParam(':lightNeeds', $lightNeeds, PDO::PARAM_STR);
             $updatePlantStatement->bindParam(':listingID', $listingID, PDO::PARAM_INT);
 
-            
+            // Execute the plant update
             $updatePlantStatement->execute();
 
-            
+            // SUCCESS! Both updates worked!
             $successMessage = "Your listing has been updated successfully!";
 
+            // ============================================
+            // STEP 13: REFRESH THE LISTING DATA
+            // ============================================
+            // We need to refresh the $listing array with the new data
+            // This way, if the user stays on the page, they see the updated values
             
-            
-            
-            
-            
-            
-            
+            // Fetch the updated listing from database
             $refreshQuery = "
                 SELECT 
                     listings.listing_id,
@@ -443,9 +443,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $listing = $refreshStatement->fetch(PDO::FETCH_ASSOC);
 
         } catch (PDOException $error) {
-            
-            
-            
+            // If a database error occurs, we end up here
+            // PDOException is the type of error that database operations can throw
+            // $error->getMessage() gets a description of what went wrong
             $errors[] = "Database error: " . $error->getMessage();
         }
     }
@@ -487,20 +487,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <!-- Display success message if listing was created -->
         <?php
-            
+            // Check if there is a success message to display
             if (!empty($successMessage)) {
-                
-                
-                
-                
-                
+                // Display green success alert
+                // alert = Bootstrap class for colored message boxes
+                // alert-success = green background (for success messages)
+                // alert-dismissible = can be closed by user
+                // fade show = animation effects
                 echo "<div class=\"row mb-3\">";
                 echo "  <div class=\"col-12 col-md-10 offset-md-1\">";
                 echo "    <div class=\"alert alert-success alert-dismissible fade show\" role=\"alert\">";
                 
-                
-                
-                
+                // htmlspecialchars() prevents XSS attacks
+                // It converts special characters like < > & to safe versions
+                // Example: <script> becomes &lt;script&gt; which just displays as text
                 echo htmlspecialchars($successMessage);
                 
                 echo "      <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"alert\" aria-label=\"Close\"></button>";
@@ -512,25 +512,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <!-- Display error messages if validation fails -->
         <?php
-            
+            // Check if there are any error messages to display
             if (!empty($errors)) {
-                
-                
+                // Display red error alert
+                // alert-danger = red background (for error messages)
                 echo "<div class=\"row mb-3\">";
                 echo "  <div class=\"col-12 col-md-10 offset-md-1\">";
                 echo "    <div class=\"alert alert-danger\" role=\"alert\">";
                 echo "      <strong>Please fix the following errors:</strong>";
                 echo "      <ul class=\"mb-0 mt-2\">";
 
-                
-                
-                $errorCount = count($errors);  
-                $i = 0;  
+                // Loop through each error and display it as a list item
+                // We use a simple for loop instead of foreach for clarity
+                $errorCount = count($errors);  // count() returns the number of items in an array
+                $i = 0;  // Start counter at 0
                 
                 while ($i < $errorCount) {
-                    
+                    // $errors[$i] gets the error message at position $i
                     echo "        <li>" . htmlspecialchars($errors[$i]) . "</li>";
-                    $i = $i + 1;  
+                    $i = $i + 1;  // Move to next error
                 }
 
                 echo "      </ul>";

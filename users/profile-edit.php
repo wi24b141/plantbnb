@@ -4,20 +4,20 @@ require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/file-upload-helper.php';
 
-
-
+// NOTE: Session is already started in header.php; user-auth.php ensures only authenticated users access this page.
+// Extract user ID from session and cast to integer for type safety
 $userID = intval($_SESSION['user_id']);
 
-
+// Initialize variables to prevent undefined variable warnings
 $user = null;
 $bio = '';
 $currentProfilePhotoPath = '';
 $successMessage = '';
 $errorMessage = '';
 
-
+// Fetch current user profile data to pre-populate the form
 try {
-    
+    // NOTE: PDO prepared statements protect against SQL Injection by separating SQL logic from user data.
     $userQuery = "
         SELECT 
             user_id,
@@ -34,47 +34,47 @@ try {
     $userStatement->execute();
     $user = $userStatement->fetch(PDO::FETCH_ASSOC);
 
-    
+    // If user not found, session is invalid (user may have been deleted)
     if (!$user) {
         session_destroy();
         header('Location: login.php');
         exit();
     }
 
-    
+    // Pre-fill form fields with current database values; use null coalescing for optional fields
     $bio = isset($user['bio']) ? $user['bio'] : '';
     $currentProfilePhotoPath = isset($user['profile_photo_path']) ? $user['profile_photo_path'] : '';
 
 } catch (PDOException $error) {
-    
+    // NOTE: Catching PDOException prevents application crashes and provides graceful error handling.
     $errorMessage = "Database error: " . $error->getMessage();
 }
 
-
+// Process form submission on POST request
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    
+    // Retrieve and sanitize bio input
     $newBio = isset($_POST['bio']) ? $_POST['bio'] : '';
     $newBio = trim($newBio);
     
-    
+    // NOTE: htmlspecialchars() prevents XSS (Cross-Site Scripting) attacks by converting special characters to HTML entities.
     $sanitizedBio = htmlspecialchars($newBio);
 
-    
+    // Retain current photo path unless a new file is uploaded
     $newProfilePhotoPath = $currentProfilePhotoPath;
 
-    
-    
+    // NOTE: File upload validation occurs in uploadFile() helper function (MIME type checking, size limits).
+    // This centralizes security logic and prevents arbitrary file uploads.
     $profilePhotoResult = uploadFile(
         'profile_photo',
         __DIR__ . '/../uploads/profiles',
         ['image/jpeg', 'image/png'],
-        2 * 1024 * 1024 
+        2 * 1024 * 1024 // 2MB max file size
     );
 
-    
+    // uploadFile() returns: file path (success), error string (failure), or null (no file provided)
     if ($profilePhotoResult !== null) {
-        
+        // Differentiate between success (path contains '/') and error (plain message)
         if (strpos($profilePhotoResult, '/') !== false) {
             $newProfilePhotoPath = $profilePhotoResult;
         } else {
@@ -82,10 +82,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    
+    // Persist changes to database only if file upload succeeded or was optional
     if (empty($errorMessage)) {
         try {
-            
+            // NOTE: Prepared statements with bound parameters prevent SQL Injection attacks.
             $updateQuery = "
                 UPDATE users
                 SET 
@@ -102,7 +102,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $successMessage = "Your profile has been updated successfully!";
             
-            
+            // Update local variables to reflect new state in the form
             $bio = $newBio;
             $currentProfilePhotoPath = $newProfilePhotoPath;
 
@@ -156,11 +156,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="text-center">
                                 <?php
                                     if (!empty($currentProfilePhotoPath)) {
-                                        
+                                        // Build relative path from users/ directory to uploads/
                                         $displayPath = '../' . htmlspecialchars($currentProfilePhotoPath);
                                         echo "<img src=\"" . $displayPath . "\" alt=\"Current profile photo\" class=\"rounded-circle\" style=\"width: 120px; height: 120px; object-fit: cover; border: 3px solid #e9ecef;\">";
                                     } else {
-                                        echo "<img src=\"https:
+                                        echo "<img src=\"https://via.placeholder.com/120?text=No+Photo\" alt=\"No profile photo\" class=\"rounded-circle\" style=\"width: 120px; height: 120px; object-fit: cover; border: 3px solid #e9ecef;\">";
                                     }
                                 ?>
                             </div>

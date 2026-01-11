@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/db.php';
 
-
+// Initialize form state variables
 $errors = [];
 $successMessage = '';
 $username = '';
@@ -10,15 +10,15 @@ $email = '';
 $password = '';
 $passwordConfirm = '';
 
-
+// Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    
+    // Retrieve and sanitize user input
     $username = trim($_POST['username']);
     $email = trim($_POST['email']);
     $password = trim($_POST['password']);
     $passwordConfirm = trim($_POST['password_confirm']);
 
-    
+    // Validate username length and presence
     if (empty($username)) {
         $errors[] = 'Username is required.';
     }
@@ -29,16 +29,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Username must not exceed 50 characters.';
     }
 
-    
+    // Validate email format using PHP's built-in filter
     if (empty($email)) {
         $errors[] = 'Email is required.';
     }
-    
+    // NOTE: FILTER_VALIDATE_EMAIL ensures RFC-compliant email format
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $errors[] = 'Please enter a valid email address.';
     }
 
-    
+    // Validate password strength and confirmation
     if (empty($password)) {
         $errors[] = 'Password is required.';
     }
@@ -52,13 +52,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Passwords do not match.';
     }
 
-    
+    // Proceed with database operations only if all validation passes
     if (count($errors) === 0) {
         try {
-            
+            // Check for duplicate email addresses
             $checkEmailQuery = "SELECT user_id FROM users WHERE email = :email";
             $checkEmailStatement = $connection->prepare($checkEmailQuery);
-            
+            // NOTE: Using PDO prepared statements protects against SQL Injection attacks
             $checkEmailStatement->bindParam(':email', $email, PDO::PARAM_STR);
             $checkEmailStatement->execute();
             $existingUser = $checkEmailStatement->fetch(PDO::FETCH_ASSOC);
@@ -66,13 +66,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($existingUser) {
                 $errors[] = 'This email is already registered.';
             } else {
-                
+                // NOTE: password_hash() uses BCRYPT, a one-way hashing algorithm that prevents password recovery
                 $passwordHash = password_hash($password, PASSWORD_BCRYPT);
 
-                
+                // Insert new user with hashed password and unverified status
                 $insertUserQuery = "INSERT INTO users (username, email, password_hash, is_verified, created_at) VALUES (:username, :email, :password_hash, 0, NOW())";
                 $insertUserStatement = $connection->prepare($insertUserQuery);
-                
+                // NOTE: PDO prepared statements with bound parameters prevent SQL Injection
                 $insertUserStatement->bindParam(':username', $username, PDO::PARAM_STR);
                 $insertUserStatement->bindParam(':email', $email, PDO::PARAM_STR);
                 $insertUserStatement->bindParam(':password_hash', $passwordHash, PDO::PARAM_STR);
@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $successMessage = 'Registration successful! You can now log in.';
                 
-                
+                // Clear form fields after successful registration
                 $username = '';
                 $email = '';
                 $password = '';
@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
 
         } catch (PDOException $error) {
-            
+            // Catch database exceptions and display generic error message for security
             $errors[] = 'A database error occurred. Please try again later.';
         }
     }
@@ -119,23 +119,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="card-body">
                         
                         <?php
-                        
+                        // Display success message if registration completed
                         if (!empty($successMessage)) {
                             echo "<div class=\"alert alert-success\">";
-                            
+                            // NOTE: htmlspecialchars() prevents XSS (Cross-Site Scripting) attacks by escaping HTML
                             echo htmlspecialchars($successMessage);
                             echo "</div>";
                         }
                         ?>
 
                         <?php
-                        
+                        // Display validation errors if present
                         if (count($errors) > 0) {
                             echo "<div class=\"alert alert-danger\">";
                             echo "<strong>Please fix the following errors:</strong>";
                             echo "<ul>";
                             foreach ($errors as $error) {
-                                
+                                // NOTE: htmlspecialchars() escapes special characters to prevent XSS attacks
                                 echo "<li>" . htmlspecialchars($error) . "</li>";
                             }
                             echo "</ul>";

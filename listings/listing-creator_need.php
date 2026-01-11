@@ -16,10 +16,10 @@ require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/file-upload-helper.php';
 
-
+// NOTE: intval() provides type safety by ensuring user_id is an integer, preventing type juggling vulnerabilities
 $userID = intval($_SESSION['user_id']);
 
-
+// Initialize form fields to preserve user input on validation failure
 $listingType = 'need';
 $title = '';
 $description = '';
@@ -32,15 +32,15 @@ $plantType = '';
 $wateringNeeds = '';
 $lightNeeds = '';
 
-
+// Initialize validation error array and success message
 $errors = [];
 $successMessage = '';
 
-
+// Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    
-    
+    // Retrieve and sanitize form inputs using null coalescing operator for defaults
+    // NOTE: trim() prevents whitespace-only submissions and normalizes user input
     $listingType = trim($_POST['listing_type'] ?? '');
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
@@ -53,17 +53,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $wateringNeeds = trim($_POST['watering_needs'] ?? '');
     $lightNeeds = trim($_POST['light_needs'] ?? '');
 
+    // ============================================
+    // SERVER-SIDE VALIDATION
+    // ============================================
+    // NOTE: Server-side validation is essential because client-side validation can be bypassed
     
-    
-    
-    
-    
-    
+    // Validate listing type matches expected value for this form
     if ($listingType !== 'need') {
         $errors[] = 'Invalid listing type.';
     }
 
-    
+    // Validate title presence and length constraints
     if (empty($title)) {
         $errors[] = 'Title is required.';
     } else {
@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    
+    // Validate description with minimum length requirement
     if (empty($description)) {
         $errors[] = 'Description is required.';
     } else {
@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    
+    // Validate required fields
     if (empty($locationApprox)) {
         $errors[] = 'Location is required.';
     }
@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Light Needs is required.';
     }
 
-    
+    // Validate logical date range: end date must be after start date
     if (!empty($startDate) && !empty($endDate)) {
         $startTimestamp = strtotime($startDate);
         $endTimestamp = strtotime($endDate);
@@ -119,12 +119,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // ============================================
+    // FILE UPLOAD PROCESSING
+    // ============================================
+    // NOTE: File upload helper validates MIME types and file size to prevent malicious uploads
     
-    
-    
-    
-    
-    
+    // Process optional listing photo (JPEG/PNG only, max 3MB)
     $listingPhotoResult = uploadFile(
         'listing_photo',
         __DIR__ . '/../uploads/listings',
@@ -140,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    
+    // Process optional care sheet PDF (max 3MB)
     $careSheetResult = uploadFile(
         'care_sheet',
         __DIR__ . '/../uploads/caresheets',
@@ -156,16 +156,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // ============================================
+    // DATABASE TRANSACTION
+    // ============================================
     
-    
-    
-    
-    
+    // Proceed with database insertion only if validation passed
     if (empty($errors)) {
-        
+        // NOTE: try-catch blocks handle PDOException for graceful error handling
         try {
-            
-            
+            // Prepare SQL INSERT statement for listings table
+            // NOTE: PDO prepared statements with parameterized queries prevent SQL injection attacks
             $insertListingQuery = "
                 INSERT INTO listings (
                     user_id,
@@ -198,10 +198,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 )
             ";
 
-            
+            // Prepare statement to separate SQL logic from data
             $insertListingStatement = $connection->prepare($insertListingQuery);
 
-            
+            // Bind parameters with explicit type casting for added security
             $insertListingStatement->bindParam(':userID', $userID, PDO::PARAM_INT);
             $insertListingStatement->bindParam(':listingType', $listingType, PDO::PARAM_STR);
             $insertListingStatement->bindParam(':title', $title, PDO::PARAM_STR);
@@ -214,17 +214,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $insertListingStatement->bindParam(':experience', $experience, PDO::PARAM_STR);
             $insertListingStatement->bindParam(':priceRange', $priceRange, PDO::PARAM_STR);
 
-            
+            // Execute the prepared statement
             $insertListingStatement->execute();
 
-            
+            // Retrieve auto-incremented primary key for foreign key reference
             $newListingID = $connection->lastInsertId();
 
+            // ============================================
+            // PLANT ENTRY INSERTION
+            // ============================================
             
-            
-            
-            
-            
+            // Insert associated plant record with foreign key reference to listing
             $insertPlantQuery = "
                 INSERT INTO plants (
                     listing_id,
@@ -250,7 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $successMessage = "Your listing has been created successfully!";
 
-            
+            // Reset form fields after successful submission
             $listingType = '';
             $title = '';
             $description = '';
@@ -264,7 +264,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $lightNeeds = '';
 
         } catch (PDOException $error) {
-            
+            // Catch and log database exceptions for debugging while protecting sensitive information
             $errors[] = "Database error: " . $error->getMessage();
         }
     }
@@ -297,12 +297,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Success Feedback -->
         <?php
             if (!empty($successMessage)) {
-                
+                // Bootstrap alert-success component with dismiss functionality
                 echo "<div class=\"row mb-3\">";
                 echo "  <div class=\"col-12 col-md-10 offset-md-1\">";
                 echo "    <div class=\"alert alert-success alert-dismissible fade show\" role=\"alert\">";
                 
-                
+                // NOTE: htmlspecialchars() prevents XSS by encoding HTML entities
                 echo htmlspecialchars($successMessage);
                 
                 echo "      <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"alert\" aria-label=\"Close\"></button>";
@@ -315,7 +315,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Validation Error Feedback -->
         <?php
             if (!empty($errors)) {
-                
+                // Bootstrap alert-danger component for validation errors
                 echo "<div class=\"row mb-3\">";
                 echo "  <div class=\"col-12 col-md-10 offset-md-1\">";
                 echo "    <div class=\"alert alert-danger\" role=\"alert\">";

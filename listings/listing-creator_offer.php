@@ -15,12 +15,12 @@ require_once __DIR__ . '/../includes/user-auth.php';
 require_once __DIR__ . '/../includes/db.php';
 require_once __DIR__ . '/../includes/file-upload-helper.php';
 
-
-
+// NOTE: intval() provides type safety by ensuring user_id is strictly an integer,
+// preventing type juggling vulnerabilities in comparisons and queries.
 $userID = intval($_SESSION['user_id']);
 
-
-
+// Initialize form variables to prevent "undefined variable" notices and support form persistence.
+// Pre-populating with empty strings ensures clean re-rendering after validation failures.
 $listingType = 'offer';
 $title = '';
 $description = '';
@@ -33,7 +33,7 @@ $plantType = '';
 $wateringNeeds = '';
 $lightNeeds = '';
 
-
+// Separate error array from success string to accommodate multiple validation issues.
 $errors = [];
 $successMessage = '';
 
@@ -45,8 +45,8 @@ $successMessage = '';
  */
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    
-    
+    // Retrieve and sanitize input using null coalescing operator (??) for safe defaults.
+    // trim() prevents whitespace-based validation bypasses.
     $listingType = trim($_POST['listing_type'] ?? '');
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
@@ -67,12 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
      * client-side checks by manipulating HTTP requests directly.
      */
     
-    
+    // Enforce listing type constraint for this specific form.
     if ($listingType !== 'offer') {
         $errors[] = 'Invalid listing type.';
     }
 
-    
+    // Title validation: presence and length constraints.
     if (empty($title)) {
         $errors[] = 'Title is required.';
     } else {
@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    
+    // Description validation: minimum length ensures substantive content.
     if (empty($description)) {
         $errors[] = 'Description is required.';
     } else {
@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    
+    // Location and date validations: required fields.
     if (empty($locationApprox)) {
         $errors[] = 'Location is required.';
     }
@@ -106,10 +106,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'End Date is required.';
     }
 
-    
-    
+    // Service details (plant_type, watering_needs, light_needs) remain optional
+    // to allow flexibility in offer descriptions.
 
-    
+    // Logical date validation: end date must occur after start date.
     if (!empty($startDate) && !empty($endDate)) {
         $startTimestamp = strtotime($startDate);
         $endTimestamp = strtotime($endDate);
@@ -119,11 +119,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    
+    // Offer listings do not require photo uploads or care sheet documents.
     $listingPhotoPath = null;
     $careSheetPath = null;
 
-    
+    // Aggregate optional service fields into description for storage.
     if (!empty($plantType)) {
         $description .= "\n\nServices Offered: " . $plantType;
     }
@@ -145,9 +145,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
      */
     if (empty($errors)) {
         try {
-            
-            
-            
+            // NOTE: Prepared statements with named placeholders (:userID) separate SQL logic
+            // from user data, preventing SQL injection. Even if malicious input like
+            // "'; DROP TABLE listings; --" is provided, it's treated as literal string data.
             
             $insertListingQuery = "
                 INSERT INTO listings (
@@ -181,11 +181,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 )
             ";
 
-            
+            // Prepare statement: compiles SQL with placeholders but does not execute.
             $insertListingStatement = $connection->prepare($insertListingQuery);
 
-            
-            
+            // Bind PHP variables to SQL placeholders with explicit type declarations.
+            // PDO::PARAM_INT and PDO::PARAM_STR enforce type safety at the database driver level.
             $insertListingStatement->bindParam(':userID', $userID, PDO::PARAM_INT);
             $insertListingStatement->bindParam(':listingType', $listingType, PDO::PARAM_STR);
             $insertListingStatement->bindParam(':title', $title, PDO::PARAM_STR);
@@ -198,17 +198,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $insertListingStatement->bindParam(':experience', $experience, PDO::PARAM_STR);
             $insertListingStatement->bindParam(':priceRange', $priceRange, PDO::PARAM_STR);
 
-            
+            // Execute the prepared statement to persist the listing.
             $insertListingStatement->execute();
 
-            
+            // Retrieve auto-incremented primary key for the newly created listing.
             $newListingID = $connection->lastInsertId();
 
-            
+            // Offer listings do not create corresponding plant table entries.
 
             $successMessage = "Your listing has been created successfully!";
 
-            
+            // Reset form variables to empty state for subsequent listing creation.
             $listingType = '';
             $title = '';
             $description = '';
@@ -222,9 +222,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $lightNeeds = '';
 
         } catch (PDOException $error) {
-            
-            
-            
+            // Catch database exceptions and provide user-friendly error feedback.
+            // NOTE: In production, detailed error messages should be logged server-side
+            // rather than displayed to users to prevent information disclosure.
             $errors[] = "Database error: " . $error->getMessage();
         }
     }
@@ -257,13 +257,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Success Message Display -->
         <?php
             if (!empty($successMessage)) {
-                
+                // Bootstrap alert-success provides visual feedback for successful operations.
                 echo "<div class=\"row mb-3\">";
                 echo "  <div class=\"col-12 col-md-10 offset-md-1\">";
                 echo "    <div class=\"alert alert-success alert-dismissible fade show\" role=\"alert\">";
                 
-                
-                
+                // NOTE: htmlspecialchars() prevents XSS (Cross-Site Scripting) by encoding
+                // HTML special characters. This ensures user input is rendered as text, not code.
                 echo htmlspecialchars($successMessage);
                 
                 echo "      <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"alert\" aria-label=\"Close\"></button>";
@@ -276,14 +276,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- Error Message Display -->
         <?php
             if (!empty($errors)) {
-                
+                // Bootstrap alert-danger provides visual emphasis for validation failures.
                 echo "<div class=\"row mb-3\">";
                 echo "  <div class=\"col-12 col-md-10 offset-md-1\">";
                 echo "    <div class=\"alert alert-danger\" role=\"alert\">";
                 echo "      <strong>Please fix the following errors:</strong>";
                 echo "      <ul class=\"mb-0 mt-2\">";
 
-                
+                // Iterate through error array and sanitize each message for output.
                 $errorCount = count($errors);
                 $i = 0;
                 

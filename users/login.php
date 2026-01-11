@@ -2,74 +2,74 @@
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/db.php';
 
-
+// Initialize error message variable for form validation feedback
 $loginError = '';
 
-
+// Process POST request when user submits login form
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
-    
-    
+    // Retrieve and sanitize user input from POST superglobal
+    // NOTE: trim() removes leading/trailing whitespace to prevent authentication bypass
     $username = trim($_POST["username"] ?? "");
     $password = trim($_POST["password"] ?? "");
     
-    
+    // Check if "Remember Me" checkbox was selected for persistent authentication
     $rememberMe = isset($_POST["remember_me"]);
     
-    
+    // Server-side validation to ensure both credentials are provided
     if (empty($username) || empty($password)) {
         $loginError = "Please enter both username and password.";
         
     } else {
-        
-        
+        // NOTE: Using PDO prepared statements protects against SQL injection attacks by separating
+        // SQL logic from user data. The :username placeholder is bound to the variable separately.
         $query = "SELECT user_id, username, password_hash FROM users WHERE username = :username";
         $statement = $connection->prepare($query);
         $statement->bindParam(':username', $username, PDO::PARAM_STR);
         $statement->execute();
         
-        
+        // Retrieve user record; returns false if no matching username exists
         $user = $statement->fetch(PDO::FETCH_ASSOC);
         
         
-        
-        
+        // NOTE: password_verify() uses one-way hashing (BCRYPT) to securely compare passwords.
+        // Plain-text passwords are never stored in the database, protecting user credentials.
         if ($user && password_verify($password, $user['password_hash'])) {
-            
-            
-            
+            // Authentication successful - establish user session
+            // NOTE: Sessions maintain state across HTTP requests (which are stateless by default).
+            // Session data is stored server-side and referenced via a session ID cookie.
             $_SESSION["loggedIn"] = true;
             $_SESSION["user_id"] = $user['user_id'];
             $_SESSION["username"] = $user['username'];
             
             
-            
+            // Implement persistent authentication if "Remember Me" was selected
             if ($rememberMe) {
-                
-                
+                // NOTE: random_bytes(32) generates cryptographically secure random tokens.
+                // This prevents token prediction attacks. bin2hex() converts to hexadecimal string.
                 $rememberToken = bin2hex(random_bytes(32));
                 
-                
-                
+                // Store hashed token in database for server-side verification
+                // NOTE: Using prepared statements here also prevents SQL injection
                 $updateQuery = "UPDATE users SET remember_token = :token WHERE user_id = :user_id";
                 $updateStatement = $connection->prepare($updateQuery);
                 $updateStatement->bindParam(':token', $rememberToken, PDO::PARAM_STR);
                 $updateStatement->bindParam(':user_id', $user['user_id'], PDO::PARAM_INT);
                 $updateStatement->execute();
                 
-                
-                
+                // Set cookie with 30-day expiration (2,592,000 seconds)
+                // Cookie path "/" ensures availability across entire application
                 setcookie("remember_token", $rememberToken, time() + (30 * 24 * 60 * 60), "/");
             }
             
-            
-            
+            // Redirect authenticated user to main listings page
+            // NOTE: exit() after header() prevents code execution after redirect
             header("Location: /plantbnb/listings/listings.php");
             exit();
             
         } else {
-            
-            
+            // Authentication failed - generic error message prevents username enumeration attacks
+            // NOTE: Not revealing whether username or password is incorrect is a security best practice
             $loginError = "Invalid username or password.";
         }
     }
@@ -102,8 +102,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                     <div class="card-body">
                         <?php
-                            
-                            
+                            // Display validation errors with Bootstrap alert styling
+                            // NOTE: htmlspecialchars() prevents XSS attacks by escaping HTML entities
                             if (!empty($loginError)) {
                                 echo "<div class=\"alert alert-danger\" role=\"alert\">";
                                 echo htmlspecialchars($loginError);

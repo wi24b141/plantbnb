@@ -38,40 +38,40 @@ try {
     
     $userToDelete = $userStatement->fetch(PDO::FETCH_ASSOC);
     
-    
+    // Check if user was found
     if (!$userToDelete) {
-        
+        // User not found - redirect back
         header('Location: admin-dashboard.php');
         exit();
     }
     
 } catch (PDOException $error) {
-    
+    // Database error
     $errorMessage = "Database error: " . $error->getMessage();
 }
 
+// ============================================
+// STEP 6: HANDLE FORM SUBMISSION (DELETE USER)
+// ============================================
 
-
-
-
-
+// Check if the form was submitted
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    
+    // Check if the confirm button was clicked
     if (isset($_POST['confirm_delete'])) {
-        
+        // Admin confirmed deletion
         
         try {
+            // When we delete a user, we need to delete all their related data
+            // This is called "cascading delete"
+            // We delete in this order:
+            // 1. User's messages (both sent and received)
+            // 2. User's favorites
+            // 3. User's plants (linked to their listings)
+            // 4. User's listings
+            // 5. Finally, the user account itself
             
-            
-            
-            
-            
-            
-            
-            
-            
-            
+            // DELETE STEP 1: Delete all messages where user is sender or receiver
             $deleteMessagesQuery = "
                 DELETE FROM messages
                 WHERE sender_id = :userID OR receiver_id = :userID
@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deleteMessagesStatement->bindParam(':userID', $userToDeleteID, PDO::PARAM_INT);
             $deleteMessagesStatement->execute();
             
-            
+            // DELETE STEP 2: Delete all favorites created by this user
             $deleteFavoritesQuery = "
                 DELETE FROM favorites
                 WHERE user_id = :userID
@@ -89,8 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deleteFavoritesStatement->bindParam(':userID', $userToDeleteID, PDO::PARAM_INT);
             $deleteFavoritesStatement->execute();
             
-            
-            
+            // DELETE STEP 3: Get all listing IDs that belong to this user
+            // We need these IDs to delete the plants table entries
             $getUserListingsQuery = "
                 SELECT listing_id FROM listings WHERE user_id = :userID
             ";
@@ -99,8 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $getUserListingsStatement->execute();
             $userListings = $getUserListingsStatement->fetchAll(PDO::FETCH_ASSOC);
             
-            
-            
+            // DELETE STEP 4: Delete plants for each of the user's listings
+            // We loop through each listing and delete its plants
             foreach ($userListings as $listing) {
                 $deletePlantsQuery = "
                     DELETE FROM plants
@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $deletePlantsStatement->execute();
             }
             
-            
+            // DELETE STEP 5: Delete all listings by this user
             $deleteListingsQuery = "
                 DELETE FROM listings
                 WHERE user_id = :userID
@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deleteListingsStatement->bindParam(':userID', $userToDeleteID, PDO::PARAM_INT);
             $deleteListingsStatement->execute();
             
-            
+            // DELETE STEP 6: Finally, delete the user account itself
             $deleteUserQuery = "
                 DELETE FROM users
                 WHERE user_id = :userID
@@ -129,13 +129,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deleteUserStatement->bindParam(':userID', $userToDeleteID, PDO::PARAM_INT);
             $deleteUserStatement->execute();
             
-            
-            
+            // Success! User and all related data deleted
+            // Redirect back to admin dashboard
             header('Location: admin-dashboard.php');
             exit();
             
         } catch (PDOException $error) {
-            
+            // Database error during deletion
             $errorMessage = "Failed to delete user: " . $error->getMessage();
         }
     }
@@ -176,7 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- ============================================ -->
         
         <?php
-            
+            // Show error message if there is one
             if (!empty($errorMessage)) {
                 echo "<div class=\"alert alert-danger\" role=\"alert\">";
                 echo htmlspecialchars($errorMessage);
@@ -242,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <li>
                                         <strong>Role:</strong>
                                         <?php
-                                            
+                                            // Show role with colored badge
                                             if ($userToDelete['role'] === 'admin') {
                                                 echo "<span class=\"badge bg-danger\">Admin</span>";
                                             } else {

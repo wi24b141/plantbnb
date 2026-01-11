@@ -5,39 +5,39 @@ require_once __DIR__ . '/../includes/db.php';
 
 $currentUserId = $_SESSION['user_id'];
 
-
-
+// Validate recipient user ID from URL parameter
+// NOTE: Using isset() prevents undefined index errors and enforces required parameters.
 if (isset($_GET['user_id']) === false) {
     header("Location: messages.php");
     exit();
 }
 
-
+// Type-cast to integer to sanitize input and prevent SQL injection
 $otherUserId = (int)$_GET['user_id'];
 
-
+// Prevent users from messaging themselves (business logic validation)
 if ($otherUserId === $currentUserId) {
     header("Location: messages.php");
     exit();
 }
 
-
-
+// Retrieve recipient user information for display
+// NOTE: PDO prepared statements protect against SQL Injection by separating SQL logic from data.
 $otherUserSql = "SELECT user_id, username FROM users WHERE user_id = :other_user_id LIMIT 1";
 $otherUserStatement = $connection->prepare($otherUserSql);
 $otherUserStatement->bindParam(':other_user_id', $otherUserId, PDO::PARAM_INT);
 $otherUserStatement->execute();
 $otherUser = $otherUserStatement->fetch(PDO::FETCH_ASSOC);
 
-
+// Validate that the recipient exists in the database
 if ($otherUser === false) {
     header("Location: messages.php");
     exit();
 }
 
-
-
-
+// Retrieve all messages in bidirectional conversation
+// NOTE: The OR condition captures both directions (sent and received) to build a complete thread.
+// Chronological ordering (ASC) ensures proper conversational flow from oldest to newest.
 $messagesSql = "
     SELECT message_id, sender_id, receiver_id, message_text, created_at
     FROM messages
@@ -48,16 +48,16 @@ $messagesSql = "
     ORDER BY created_at ASC
 ";
 
-
+// NOTE: Parameterized queries prevent SQL Injection by treating user input as data, not executable code.
 $messagesStatement = $connection->prepare($messagesSql);
 $messagesStatement->bindParam(':current_user_id', $currentUserId, PDO::PARAM_INT);
 $messagesStatement->bindParam(':other_user_id', $otherUserId, PDO::PARAM_INT);
 $messagesStatement->execute();
 $messages = $messagesStatement->fetchAll(PDO::FETCH_ASSOC);
 
-
-
-
+// Update read status for received messages
+// NOTE: This UPDATE only affects messages WHERE the current user is the receiver,
+// ensuring unread counts in the inbox remain accurate across the application.
 $markReadSql = "
     UPDATE messages 
     SET is_read = 1 
@@ -148,22 +148,22 @@ $markReadStatement->execute();
             -->
             <div class="card-body" style="max-height: 500px; overflow-y: auto;">
                 <?php
-                
+                // Display messages or empty state
                 if (count($messages) === 0) {
                     echo '<p class="text-muted">No messages yet. Send the first message below!</p>';
                 } else {
-                    
+                    // Iterate through messages and render with conditional styling based on sender
                     foreach ($messages as $message) {
                         $senderId = $message['sender_id'];
                         
-                        
-                        
+                        // NOTE: htmlspecialchars() prevents XSS (Cross-Site Scripting) by escaping HTML entities.
+                        // User-generated content is never rendered as executable code.
                         $messageText = htmlspecialchars($message['message_text']);
                         
                         $timestamp = $message['created_at'];
                         $formattedTimestamp = date('M j, Y \a\t g:i A', strtotime($timestamp));
                         
-                        
+                        // Conditional rendering: sent messages styled differently from received messages
                         if ($senderId === $currentUserId) {
                             echo '<div class="message-sent">';
                             echo '<div>' . $messageText . '</div>';

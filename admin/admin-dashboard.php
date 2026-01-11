@@ -5,8 +5,8 @@ require_once __DIR__ . '/../includes/admin-auth.php';
 $pendingUsers = array();
 
 try {
-    
-    
+    // Retrieve users awaiting verification (uploaded ID but is_verified = 0)
+    // Ordered chronologically to prioritize older submissions
     $pendingQuery = "
         SELECT 
             user_id,
@@ -20,19 +20,19 @@ try {
         ORDER BY created_at ASC
     ";
     
-    
+    // NOTE: PDO prepared statements protect against SQL Injection by separating query structure from data
     $pendingStatement = $connection->prepare($pendingQuery);
     $pendingStatement->execute();
     $pendingUsers = $pendingStatement->fetchAll(PDO::FETCH_ASSOC);
     
 } catch (PDOException $error) {
-    
+    // Graceful degradation: empty array prevents fatal errors in HTML rendering
 }
 
 $allUsers = array();
 
 try {
-    
+    // Fetch complete user registry for administrative oversight
     $usersQuery = "
         SELECT 
             user_id,
@@ -50,7 +50,7 @@ try {
     $allUsers = $usersStatement->fetchAll(PDO::FETCH_ASSOC);
     
 } catch (PDOException $error) {
-    
+    // Graceful degradation maintains page functionality despite query failure
 }
 
 $totalUsersCount = 0;
@@ -58,7 +58,7 @@ $verifiedUsersCount = 0;
 $totalListingsCount = 0;
 
 try {
-    
+    // NOTE: Aggregate functions like COUNT(*) are efficient for dashboard metrics
     $totalUsersQuery = "SELECT COUNT(*) as total FROM users";
     
     $totalUsersStatement = $connection->prepare($totalUsersQuery);
@@ -70,11 +70,11 @@ try {
     }
     
 } catch (PDOException $error) {
-    
+    // Default value of 0 ensures display stability
 }
 
 try {
-    
+    // Filter count to users with successful ID verification
     $verifiedUsersQuery = "SELECT COUNT(*) as total FROM users WHERE is_verified = 1";
     
     $verifiedUsersStatement = $connection->prepare($verifiedUsersQuery);
@@ -86,11 +86,11 @@ try {
     }
     
 } catch (PDOException $error) {
-    
+    // Maintains metric integrity on database errors
 }
 
 try {
-    
+    // Retrieve total listings count across all users and types
     $totalListingsQuery = "SELECT COUNT(*) as total FROM listings";
     
     $totalListingsStatement = $connection->prepare($totalListingsQuery);
@@ -102,14 +102,14 @@ try {
     }
     
 } catch (PDOException $error) {
-    
+    // Prevents dashboard display errors if listings table is inaccessible
 }
 
 $allListings = array();
 
 try {
-    
-    
+    // NOTE: INNER JOIN combines listings with user data, excluding orphaned records
+    // This query demonstrates relational database normalization principles
     $listingsQuery = "
         SELECT 
             l.listing_id,
@@ -128,7 +128,7 @@ try {
     $allListings = $listingsStatement->fetchAll(PDO::FETCH_ASSOC);
     
 } catch (PDOException $error) {
-    
+    // Empty array allows page rendering without data
 }
 
 ?>
@@ -165,7 +165,7 @@ try {
                         <h6 class="text-muted text-uppercase small">Total Users</h6>
                         <h2 class="display-4 text-primary">
                             <?php 
-                                
+                                // NOTE: htmlspecialchars() prevents XSS by encoding HTML special characters
                                 echo htmlspecialchars($totalUsersCount); 
                             ?>
                         </h2>
@@ -232,10 +232,10 @@ try {
                                                     echo "<tr>";
                                                     echo "  <td>" . htmlspecialchars($pendingUser['username']) . "</td>";
                                                     echo "  <td>" . htmlspecialchars($pendingUser['email']) . "</td>";
-                                                    
+                                                    // NOTE: date() and strtotime() convert MySQL DATETIME to human-readable format
                                                     echo "  <td>" . date('M d, Y', strtotime($pendingUser['created_at'])) . "</td>";
                                                     echo "  <td>";
-                                                    
+                                                    // URL parameter passing for admin review workflow
                                                     echo "    <a href=\"admin-verify-user.php?user_id=" . $pendingUser['user_id'] . "\" class=\"btn btn-primary btn-sm\">";
                                                     echo "      Review Document";
                                                     echo "    </a>";
@@ -285,7 +285,7 @@ try {
                                                     echo "<tr>";
                                                     echo "  <td>" . htmlspecialchars($user['username']) . "</td>";
                                                     echo "  <td>" . htmlspecialchars($user['email']) . "</td>";
-                                                    
+                                                    // NOTE: Bootstrap badges provide visual differentiation of user roles
                                                     echo "  <td>";
                                                     if ($user['role'] === 'admin') {
                                                         echo "    <span class=\"badge bg-danger\">Admin</span>";
@@ -302,7 +302,7 @@ try {
                                                     echo "  </td>";
                                                     echo "  <td>" . date('M d, Y', strtotime($user['created_at'])) . "</td>";
                                                     echo "  <td>";
-                                                    
+                                                    // Destructive action uses .btn-danger to signal caution
                                                     echo "    <a href=\"admin-delete-user.php?user_id=" . $user['user_id'] . "\" class=\"btn btn-danger btn-sm\">";
                                                     echo "      Delete";
                                                     echo "    </a>";
@@ -370,7 +370,7 @@ try {
                                                     echo "  </td>";
                                                     echo "  <td>" . date('M d, Y', strtotime($listing['created_at'])) . "</td>";
                                                     echo "  <td>";
-                                                    
+                                                    // NOTE: .me-2 (margin-end) and .mb-1 (margin-bottom) prevent button wrapping issues
                                                     echo "    <a href=\"/plantbnb/listings/listing-details.php?listing_id=" . $listing['listing_id'] . "\" class=\"btn btn-info btn-sm me-2 mb-1\">";
                                                     echo "      View";
                                                     echo "    </a>";
