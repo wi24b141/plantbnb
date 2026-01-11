@@ -2,11 +2,11 @@
 require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/db.php';
 
-// =============================================================================
-// Show only listings created by the currently logged-in user
-// =============================================================================
 
-// If user is not logged in, show a friendly message and a link to login
+
+
+
+
 if (!isset($isLoggedIn) || !$isLoggedIn) {
     ?>
     <!DOCTYPE html>
@@ -26,12 +26,12 @@ if (!isset($isLoggedIn) || !$isLoggedIn) {
     exit;
 }
 
-// Initialize
+
 $userListings = array();
 $errorMessage = '';
 
 try {
-    // Build SQL to fetch listings belonging to current user only
+    
     $sql = "
         SELECT
             listings.listing_id,
@@ -119,10 +119,10 @@ try {
                 echo '        <strong>Location:</strong> ' . $safeLocation . '<br>';
                 echo '        <strong>Available:</strong> ' . $safeStartDate . ' to ' . $safeEndDate;
                 echo '      </p>';
-                // Buttons: stacked on mobile, side-by-side on md+ (flex-fill makes them equal width)
+                
                 echo '      <div class="d-grid gap-2 d-md-flex">';
                 echo '        <a href="listing-details.php?id=' . $listingID . '" class="btn btn-success flex-md-fill me-md-2">View Details</a>';
-                // Edit button (only visible to the owner - page already requires login)
+                
                 echo '        <a href="listing-editor.php?id=' . $listingID . '" class="btn btn-success flex-md-fill">Edit Listing</a>';
                 echo '      </div>';
                 echo '    </div>';

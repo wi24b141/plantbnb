@@ -1,65 +1,65 @@
 <?php
-// ============================================
-// STEP 1: INCLUDE REQUIRED FILES
-// ============================================
 
-// Include the header which has Bootstrap CSS
+
+
+
+
 require_once __DIR__ . '/../includes/header.php';
 
-// Include database connection
+
 require_once __DIR__ . '/../includes/db.php';
 
-// Include user authentication (checks if user is logged in)
+
 require_once __DIR__ . '/../includes/user-auth.php';
 
-// ============================================
-// STEP 2: CHECK IF USER IS ADMIN
-// ============================================
 
-// We need to know if the logged-in user is an admin
-// We check the is_admin column in the database
+
+
+
+
+
 $isUserAdmin = false;
 
 try {
-    // Query to check if current user is an admin
+    
     $adminCheckQuery = "
         SELECT is_admin
         FROM users
         WHERE user_id = :userID
     ";
     
-    // Prepare the query
+    
     $adminCheckStatement = $connection->prepare($adminCheckQuery);
     
-    // Bind the logged-in user's ID
+    
     $adminCheckStatement->bindParam(':userID', $loggedInUserID, PDO::PARAM_INT);
     
-    // Execute the query
+    
     $adminCheckStatement->execute();
     
-    // Get the result
+    
     $adminCheckResult = $adminCheckStatement->fetch(PDO::FETCH_ASSOC);
     
-    // Check if user is admin
+    
     if ($adminCheckResult && $adminCheckResult['is_admin'] == 1) {
-        // User is an admin
+        
         $isUserAdmin = true;
     }
     
 } catch (PDOException $error) {
-    // Database error - we'll handle this later
+    
     $errorMessage = "Database error: " . $error->getMessage();
 }
 
-// ============================================
-// STEP 3: GET LISTING ID FROM URL
-// ============================================
 
-// The user clicked a link like: listing-delete.php?listing_id=5
-// We get the listing_id from the URL
+
+
+
+
+
 if (!isset($_GET['listing_id'])) {
-    // No listing_id in URL - go back to dashboard
-    // If admin, go to admin dashboard, otherwise user dashboard
+    
+    
     if ($isUserAdmin) {
         header('Location: ../admin/admin-dashboard.php');
     } else {
@@ -68,22 +68,22 @@ if (!isset($_GET['listing_id'])) {
     exit();
 }
 
-// Get the listing ID and convert to integer
+
 $listingToDeleteID = intval($_GET['listing_id']);
 
-// ============================================
-// STEP 4: FETCH LISTING DATA
-// ============================================
 
-// We need to get the listing's information to show on the confirmation page
+
+
+
+
 $listingToDelete = null;
 
-// This will store error messages
+
 $errorMessage = '';
 
 try {
-    // Query to get the listing information
-    // We also get the username of who created it
+    
+    
     $listingQuery = "
         SELECT 
             l.listing_id,
@@ -99,21 +99,21 @@ try {
         WHERE l.listing_id = :listingID
     ";
     
-    // Prepare the query
+    
     $listingStatement = $connection->prepare($listingQuery);
     
-    // Bind the parameter
+    
     $listingStatement->bindParam(':listingID', $listingToDeleteID, PDO::PARAM_INT);
     
-    // Execute the query
+    
     $listingStatement->execute();
     
-    // Get the result
+    
     $listingToDelete = $listingStatement->fetch(PDO::FETCH_ASSOC);
     
-    // Check if listing was found
+    
     if (!$listingToDelete) {
-        // Listing not found - redirect back
+        
         if ($isUserAdmin) {
             header('Location: ../admin/admin-dashboard.php');
         } else {
@@ -123,47 +123,47 @@ try {
     }
     
 } catch (PDOException $error) {
-    // Database error
+    
     $errorMessage = "Database error: " . $error->getMessage();
 }
 
-// ============================================
-// STEP 5: CHECK PERMISSION TO DELETE
-// ============================================
 
-// A regular user can only delete their OWN listings
-// An admin can delete ANY listing
 
-// Check if the logged-in user owns this listing
+
+
+
+
+
+
 $userOwnsListing = ($listingToDelete['user_id'] == $loggedInUserID);
 
-// Check if user has permission to delete this listing
+
 if (!$userOwnsListing && !$isUserAdmin) {
-    // User does NOT own this listing AND is NOT an admin
-    // Redirect back - user is not allowed to delete this listing
+    
+    
     header('Location: ../users/dashboard.php');
     exit();
 }
 
-// ============================================
-// STEP 6: HANDLE FORM SUBMISSION (DELETE LISTING)
-// ============================================
 
-// Check if the form was submitted
+
+
+
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // Check if the confirm button was clicked
+    
     if (isset($_POST['confirm_delete'])) {
-        // User confirmed deletion
+        
         
         try {
-            // When we delete a listing, we need to delete related data
-            // We delete in this order:
-            // 1. Favorites that point to this listing
-            // 2. Plants associated with this listing
-            // 3. The listing itself
             
-            // DELETE STEP 1: Delete all favorites for this listing
+            
+            
+            
+            
+            
+            
             $deleteFavoritesQuery = "
                 DELETE FROM favorites
                 WHERE listing_id = :listingID
@@ -172,7 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deleteFavoritesStatement->bindParam(':listingID', $listingToDeleteID, PDO::PARAM_INT);
             $deleteFavoritesStatement->execute();
             
-            // DELETE STEP 2: Delete all plants for this listing
+            
             $deletePlantsQuery = "
                 DELETE FROM plants
                 WHERE listing_id = :listingID
@@ -181,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deletePlantsStatement->bindParam(':listingID', $listingToDeleteID, PDO::PARAM_INT);
             $deletePlantsStatement->execute();
             
-            // DELETE STEP 3: Delete the listing itself
+            
             $deleteListingQuery = "
                 DELETE FROM listings
                 WHERE listing_id = :listingID
@@ -190,19 +190,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $deleteListingStatement->bindParam(':listingID', $listingToDeleteID, PDO::PARAM_INT);
             $deleteListingStatement->execute();
             
-            // Success! Listing and all related data deleted
-            // Redirect back to appropriate dashboard
+            
+            
             if ($isUserAdmin) {
-                // Admin - go to admin dashboard
+                
                 header('Location: ../admin/admin-dashboard.php');
             } else {
-                // Regular user - go to user dashboard
+                
                 header('Location: ../users/dashboard.php');
             }
             exit();
             
         } catch (PDOException $error) {
-            // Database error during deletion
+            
             $errorMessage = "Failed to delete listing: " . $error->getMessage();
         }
     }
@@ -240,14 +240,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <!-- col-12 = full width on all screen sizes -->
             <div class="col-12">
                 <?php
-                    // Show different back button depending on if user is admin or not
+                    
                     if ($isUserAdmin) {
-                        // Admin sees link to admin dashboard
+                        
                         echo "<a href=\"../admin/admin-dashboard.php\" class=\"btn btn-outline-secondary btn-sm\">";
                         echo "Back to Admin Dashboard";
                         echo "</a>";
                     } else {
-                        // Regular user sees link to user dashboard
+                        
                         echo "<a href=\"../users/dashboard.php\" class=\"btn btn-outline-secondary btn-sm\">";
                         echo "Back to My Dashboard";
                         echo "</a>";
@@ -261,11 +261,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- ============================================ -->
         
         <?php
-            // Show error message if there is one
+            
             if (!empty($errorMessage)) {
-                // alert-danger = red alert box for errors
+                
                 echo "<div class=\"alert alert-danger\" role=\"alert\">";
-                // htmlspecialchars prevents XSS attacks
+                
                 echo htmlspecialchars($errorMessage);
                 echo "</div>";
             }
@@ -339,42 +339,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <li>
                                         <strong>Title:</strong> 
                                         <?php 
-                                            // Show the listing title
-                                            // htmlspecialchars prevents XSS attacks
+                                            
+                                            
                                             echo htmlspecialchars($listingToDelete['title']); 
                                         ?>
                                     </li>
                                     <li>
                                         <strong>Description:</strong> 
                                         <?php 
-                                            // Show the listing description
+                                            
                                             echo htmlspecialchars($listingToDelete['description']); 
                                         ?>
                                     </li>
                                     <li>
                                         <strong>Listing ID:</strong> 
                                         <?php 
-                                            // Show the listing ID number
+                                            
                                             echo htmlspecialchars($listingToDelete['listing_id']); 
                                         ?>
                                     </li>
                                     <li>
                                         <strong>Created By:</strong> 
                                         <?php 
-                                            // Show the username of who created this listing
+                                            
                                             echo htmlspecialchars($listingToDelete['username']); 
                                         ?>
                                     </li>
                                     <li>
                                         <strong>Type:</strong>
                                         <?php
-                                            // Show type with colored badge
-                                            // badge = Bootstrap component for small colored labels
+                                            
+                                            
                                             if ($listingToDelete['listing_type'] === 'offer') {
-                                                // bg-primary = blue background
+                                                
                                                 echo "<span class=\"badge bg-primary\">Offer</span>";
                                             } else {
-                                                // bg-warning = yellow background
+                                                
                                                 echo "<span class=\"badge bg-warning\">Need</span>";
                                             }
                                         ?>
@@ -382,15 +382,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <li>
                                         <strong>Status:</strong>
                                         <?php
-                                            // Show status with colored badge
+                                            
                                             if ($listingToDelete['status'] === 'active') {
-                                                // bg-success = green background
+                                                
                                                 echo "<span class=\"badge bg-success\">Active</span>";
                                             } else if ($listingToDelete['status'] === 'inactive') {
-                                                // bg-secondary = gray background
+                                                
                                                 echo "<span class=\"badge bg-secondary\">Inactive</span>";
                                             } else {
-                                                // bg-info = light blue background
+                                                
                                                 echo "<span class=\"badge bg-info\">Completed</span>";
                                             }
                                         ?>
@@ -398,9 +398,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <li>
                                         <strong>Created:</strong> 
                                         <?php 
-                                            // Format the date to be more readable
-                                            // strtotime converts string date to timestamp
-                                            // date formats timestamp as Month Day, Year
+                                            
+                                            
+                                            
                                             echo date('M d, Y', strtotime($listingToDelete['created_at'])); 
                                         ?>
                                     </li>
@@ -424,12 +424,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <!-- d-grid = makes the link take full width of column -->
                                 <div class="d-grid">
                                     <?php
-                                        // Show different cancel link depending on if user is admin
+                                        
                                         if ($isUserAdmin) {
-                                            // Admin goes back to admin dashboard
+                                            
                                             echo "<a href=\"../admin/admin-dashboard.php\" class=\"btn btn-secondary btn-lg\">";
                                         } else {
-                                            // Regular user goes back to user dashboard
+                                            
                                             echo "<a href=\"../users/dashboard.php\" class=\"btn btn-secondary btn-lg\">";
                                         }
                                     ?>

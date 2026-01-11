@@ -3,39 +3,39 @@ require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../includes/admin-auth.php';
 require_once __DIR__ . '/../includes/db.php';
 
-// ============================================
-// STEP 3: GET USER ID FROM URL
-// ============================================
 
-// The admin clicked a link like: admin-verify-user.php?user_id=5
-// We need to get that user_id from the URL
-// $_GET is an array that contains URL parameters
 
-// Check if user_id exists in the URL
+
+
+
+
+
+
+
 if (!isset($_GET['user_id'])) {
-    // No user_id in URL - send admin back to dashboard
+    
     header('Location: admin-dashboard.php');
     exit();
 }
 
-// Get the user ID from the URL and convert to integer
-// intval() converts to integer (security measure)
+
+
 $userToVerifyID = intval($_GET['user_id']);
 
-// ============================================
-// STEP 4: FETCH USER DATA FROM DATABASE
-// ============================================
 
-// This variable will store the user's information
+
+
+
+
 $userToVerify = null;
 
-// This will store success or error messages
+
 $message = '';
-$messageType = ''; // Will be 'success' or 'danger'
+$messageType = ''; 
 
 try {
-    // Query to get the user's information
-    // We need username, email, and the verification document path
+    
+    
     $userQuery = "
         SELECT 
             user_id,
@@ -47,91 +47,91 @@ try {
         WHERE user_id = :userID
     ";
     
-    // Prepare the query to prevent SQL injection
+    
     $userStatement = $connection->prepare($userQuery);
     
-    // Bind the parameter
+    
     $userStatement->bindParam(':userID', $userToVerifyID, PDO::PARAM_INT);
     
-    // Execute the query
+    
     $userStatement->execute();
     
-    // Get the result
+    
     $userToVerify = $userStatement->fetch(PDO::FETCH_ASSOC);
     
-    // Check if user was found
+    
     if (!$userToVerify) {
-        // User not found - redirect back to dashboard
+        
         header('Location: admin-dashboard.php');
         exit();
     }
     
-    // Check if user has a verification document
+    
     if (empty($userToVerify['verification_document_path'])) {
-        // No verification document - redirect back
+        
         header('Location: admin-dashboard.php');
         exit();
     }
     
 } catch (PDOException $error) {
-    // Database error - show error message
+    
     $message = "Database error: " . $error->getMessage();
     $messageType = 'danger';
 }
 
-// ============================================
-// STEP 5: HANDLE FORM SUBMISSION
-// ============================================
 
-// Check if the form was submitted
-// The form has two buttons: "Approve" and "Reject"
-// We check which button was clicked
+
+
+
+
+
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
-    // Check if the approve button was clicked
-    // isset() checks if a variable exists
+    
+    
     if (isset($_POST['approve'])) {
-        // Admin clicked "Approve" button
+        
         
         try {
-            // Update the database to set is_verified = 1
-            // This marks the user as verified
+            
+            
             $approveQuery = "
                 UPDATE users
                 SET is_verified = 1
                 WHERE user_id = :userID
             ";
             
-            // Prepare the query
+            
             $approveStatement = $connection->prepare($approveQuery);
             
-            // Bind the parameter
+            
             $approveStatement->bindParam(':userID', $userToVerifyID, PDO::PARAM_INT);
             
-            // Execute the query
+            
             $approveStatement->execute();
             
-            // Success! Show success message
+            
             $message = "User verified successfully!";
             $messageType = 'success';
             
-            // Update the local variable so the page shows updated status
+            
             $userToVerify['is_verified'] = 1;
             
         } catch (PDOException $error) {
-            // Database error
+            
             $message = "Failed to verify user: " . $error->getMessage();
             $messageType = 'danger';
         }
         
     } else if (isset($_POST['reject'])) {
-        // Admin clicked "Reject" button
+        
         
         try {
-            // We reject by:
-            // 1. Setting is_verified = 0 (not verified)
-            // 2. Removing the verification document path
-            // This allows the user to upload a new document
+            
+            
+            
+            
             $rejectQuery = "
                 UPDATE users
                 SET 
@@ -140,22 +140,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 WHERE user_id = :userID
             ";
             
-            // Prepare the query
+            
             $rejectStatement = $connection->prepare($rejectQuery);
             
-            // Bind the parameter
+            
             $rejectStatement->bindParam(':userID', $userToVerifyID, PDO::PARAM_INT);
             
-            // Execute the query
+            
             $rejectStatement->execute();
             
-            // Success! Redirect back to dashboard
-            // The user will no longer appear in pending verifications
+            
+            
             header('Location: admin-dashboard.php');
             exit();
             
         } catch (PDOException $error) {
-            // Database error
+            
             $message = "Failed to reject verification: " . $error->getMessage();
             $messageType = 'danger';
         }
@@ -198,9 +198,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <!-- ============================================ -->
         
         <?php
-            // Show message if there is one
+            
             if (!empty($message)) {
-                // $messageType is either 'success' (green) or 'danger' (red)
+                
                 echo "<div class=\"alert alert-" . $messageType . "\" role=\"alert\">";
                 echo htmlspecialchars($message);
                 echo "</div>";
@@ -242,7 +242,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <li>
                                     <strong>Current Status:</strong>
                                     <?php
-                                        // Show current verification status
+                                        
                                         if ($userToVerify['is_verified'] == 1) {
                                             echo "<span class=\"badge bg-success\">Verified</span>";
                                         } else {
@@ -266,27 +266,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <!-- text-center = center content horizontally -->
                             <div class="text-center">
                                 <?php
-                                    // Get the file path
+                                    
                                     $documentPath = $userToVerify['verification_document_path'];
                                     
-                                    // Get the file extension to determine file type
-                                    // pathinfo() gets information about a file path
-                                    // PATHINFO_EXTENSION gets just the extension (jpg, png, pdf, etc.)
+                                    
+                                    
+                                    
                                     $fileExtension = strtolower(pathinfo($documentPath, PATHINFO_EXTENSION));
                                     
-                                    // Check if it's an image or PDF
+                                    
                                     if ($fileExtension === 'jpg' || $fileExtension === 'jpeg' || $fileExtension === 'png') {
-                                        // It's an image - display it
-                                        // img-fluid = responsive image (scales to fit screen)
-                                        // border = adds border around image
-                                        // mb-3 = margin-bottom
-                                        // ../ goes up one level from admin/ folder to reach uploads/
+                                        
+                                        
+                                        
+                                        
+                                        
                                         echo "<img src=\"../" . htmlspecialchars($documentPath) . "\" alt=\"Verification Document\" class=\"img-fluid border mb-3\" style=\"max-width: 600px;\">";
                                         
                                     } else if ($fileExtension === 'pdf') {
-                                        // It's a PDF - show a download link
-                                        // We cannot display PDFs without JavaScript
-                                        // ../ goes up one level from admin/ folder to reach uploads/
+                                        
+                                        
+                                        
                                         echo "<div class=\"alert alert-info\" role=\"alert\">";
                                         echo "  <p class=\"mb-2\">This is a PDF document. Click the button below to download and view it.</p>";
                                         echo "  <a href=\"../" . htmlspecialchars($documentPath) . "\" class=\"btn btn-primary\" download>";
@@ -294,7 +294,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         echo "  </a>";
                                         echo "</div>";
                                     } else {
-                                        // Unknown file type
+                                        
                                         echo "<div class=\"alert alert-warning\" role=\"alert\">";
                                         echo "  Unknown file type. Cannot display.";
                                         echo "</div>";
@@ -310,7 +310,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <!-- ============================================ -->
                         
                         <?php
-                            // Only show buttons if user is not already verified
+                            
                             if ($userToVerify['is_verified'] == 0) {
                         ?>
                         
@@ -364,7 +364,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <?php
                             } else {
-                                // User is already verified
+                                
                                 echo "<div class=\"alert alert-success text-center\" role=\"alert\">";
                                 echo "  This user is already verified. No action needed.";
                                 echo "</div>";
