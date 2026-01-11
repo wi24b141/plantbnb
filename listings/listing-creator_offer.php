@@ -129,59 +129,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // ============================================
-    // STEP 8: HANDLE FILE UPLOADS
-    // ============================================
-    
-    // UPLOAD 1: Listing photo (optional)
-    // uploadFile() is a custom function defined in file-upload-helper.php
-    // It returns:
-    //   - A file path string if upload was successful (e.g., "uploads/listings/photo123.jpg")
-    //   - An error message string if upload failed (e.g., "File is too large")
-    //   - null if no file was uploaded
-    
-    $listingPhotoResult = uploadFile(
-        'listing_photo',                           // The name of the form field
-        __DIR__ . '/../uploads/listings',          // Where to save the file
-        ['image/jpeg', 'image/png'],               // Allowed file types
-        3 * 1024 * 1024                            // Max size = 3 MB (3 × 1024 × 1024 bytes)
-    );
-
-    // Now we check if the upload failed
-    // If it's a string AND it doesn't contain a forward slash, it's an error message
-    // (Successful uploads return paths like "uploads/listings/photo.jpg" which contain /)
+    // Offer listings do not collect listing photos or care sheets
     $listingPhotoPath = null;
-    if ($listingPhotoResult !== null) {
-        // A file was uploaded (either success or error)
-        if (strpos($listingPhotoResult, '/') === false) {
-            // No forward slash found, so this is an error message
-            $errors[] = "Listing photo: " . $listingPhotoResult;
-        } else {
-            // Forward slash found, so this is a valid file path
-            $listingPhotoPath = $listingPhotoResult;
-        }
-    }
-
-    // UPLOAD 2: Care sheet PDF (optional)
-    $careSheetResult = uploadFile(
-        'care_sheet',                              // The name of the form field
-        __DIR__ . '/../uploads/caresheets',        // Where to save the file
-        ['application/pdf'],                       // Allowed file types (only PDF)
-        3 * 1024 * 1024                            // Max size = 3 MB
-    );
-
-    // Check if the upload failed (same logic as above)
     $careSheetPath = null;
-    if ($careSheetResult !== null) {
-        // A file was uploaded
-        if (strpos($careSheetResult, '/') === false) {
-            // This is an error message
-            $errors[] = "Care sheet: " . $careSheetResult;
-        } else {
-            // This is a valid file path
-            $careSheetPath = $careSheetResult;
-        }
-    }
 
     // ============================================
     // STEP 9: INSERT INTO DATABASE
@@ -189,6 +139,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     // Only insert into database if there are NO validation errors
     // empty($errors) returns true if the array has no items in it
+    // If provider supplied service fields, append them to the description so they're saved
+    if (!empty($plantType)) {
+        $description .= "\n\nServices Offered: " . $plantType;
+    }
+    if (!empty($wateringNeeds)) {
+        $description .= "\n\nAvailability/Terms: " . $wateringNeeds;
+    }
+    if (!empty($lightNeeds)) {
+        $description .= "\n\nAdditional Notes: " . $lightNeeds;
+    }
+
     if (empty($errors)) {
         // CRITICAL: We use try/catch for database operations
         // If something goes wrong with the database, PHP will "throw" an error
@@ -270,39 +231,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // We need this ID to link the plant entry to this listing
             $newListingID = $connection->lastInsertId();
 
-            // ============================================
-            // STEP 10: INSERT PLANT ENTRY
-            // ============================================
-            
-            // If the provider filled any service detail, insert a plants row to store them.
-            // Otherwise skip inserting an empty plants entry.
-            if (!empty($plantType) || !empty($wateringNeeds) || !empty($lightNeeds)) {
-                $insertPlantQuery = "
-                    INSERT INTO plants (
-                        listing_id,
-                        plant_type,
-                        watering_needs,
-                        light_needs
-                    ) VALUES (
-                        :listingID,
-                        :plantType,
-                        :wateringNeeds,
-                        :lightNeeds
-                    )
-                ";
-
-                // Prepare the plant insert statement
-                $insertPlantStatement = $connection->prepare($insertPlantQuery);
-
-                // Bind the plant parameters
-                $insertPlantStatement->bindParam(':listingID', $newListingID, PDO::PARAM_INT);
-                $insertPlantStatement->bindParam(':plantType', $plantType, PDO::PARAM_STR);
-                $insertPlantStatement->bindParam(':wateringNeeds', $wateringNeeds, PDO::PARAM_STR);
-                $insertPlantStatement->bindParam(':lightNeeds', $lightNeeds, PDO::PARAM_STR);
-
-                // Execute the plant insert
-                $insertPlantStatement->execute();
-            }
+            // Offers do not insert plant-specific rows
 
             // SUCCESS! Both inserts worked!
             $successMessage = "Your listing has been created successfully!";
@@ -452,7 +381,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <!-- Without this, the file upload will not work -->
                         <!-- method="POST" means "send data securely to the server" -->
                         <!-- action="" means submit to the same page (this file) -->
-                        <form method="POST" action="" enctype="multipart/form-data">
+                        <form method="POST" action="">
                             
                             <!-- ====================================== -->
                             <!-- SECTION 1: BASIC LISTING INFORMATION -->
@@ -492,11 +421,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     id="title" 
                                     name="title" 
                                     class="form-control" 
-                                    placeholder="E.g., Monstera care needed for 2 weeks" 
+                                    placeholder="E.g., Experienced plant-sitter available in Berlin" 
                                     value="<?php echo htmlspecialchars($title); ?>"
                                     required
                                 >
-                                <small class="text-muted d-block mt-1">Short, descriptive title (5-150 characters)</small>
+                                <small class="text-muted d-block mt-1">Short, descriptive title (5-150 characters). Include location and availability.</small>
                             </div>
 
                             <!-- Description Textarea -->
@@ -511,49 +440,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     name="description" 
                                     class="form-control" 
                                     rows="5" 
-                                    placeholder="Provide detailed information about your plant care listing..."
+                                    placeholder="Describe your services, experience, travel area, typical rates and availability..."
                                     required
                                 ><?php echo htmlspecialchars($description); ?></textarea>
                                 <small class="text-muted d-block mt-1">
-                                    Include important details like special care requirements, location preferences, etc. (minimum 20 characters)
+                                    Describe your services, experience, availability, and any conditions (minimum 20 characters)
                                 </small>
                             </div>
 
-                            <!-- Listing Photo Upload -->
-                            <div class="mb-3">
-                                <label for="listing_photo" class="form-label">Listing Photo (Optional)</label>
-                                
-                                <!-- type="file" = creates a file upload button -->
-                                <!-- accept=".jpg, .jpeg, .png" = limits what files the user can select -->
-                                <!-- The browser will only show JPG and PNG files in the file picker -->
-                                <input 
-                                    type="file" 
-                                    id="listing_photo" 
-                                    name="listing_photo" 
-                                    class="form-control" 
-                                    accept=".jpg, .jpeg, .png"
-                                >
-                                <small class="text-muted d-block mt-1">
-                                    JPG or PNG format. Maximum file size: 3MB. Adding a photo helps attract more interest!
-                                </small>
-                            </div>
-
-                            <!-- Care Sheet PDF Upload -->
-                            <div class="mb-3">
-                                <label for="care_sheet" class="form-label">Care Sheet PDF (Optional)</label>
-                                
-                                <!-- accept=".pdf" = only PDF files can be selected -->
-                                <input 
-                                    type="file" 
-                                    id="care_sheet" 
-                                    name="care_sheet" 
-                                    class="form-control" 
-                                    accept=".pdf"
-                                >
-                                <small class="text-muted d-block mt-1">
-                                    PDF format only. Maximum file size: 3MB. Upload a detailed care guide for your plants
-                                </small>
-                            </div>
+                            <!-- Offers do not collect listing photos or care sheets -->
 
                             <!-- Form Divider -->
                             <!-- hr = horizontal rule (a line across the page) -->

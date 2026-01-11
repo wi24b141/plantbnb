@@ -140,9 +140,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // No file uploads for "need" listings: set paths to null
+    // ============================================
+    // STEP 8: HANDLE FILE UPLOADS (for 'need' listings)
+    // ============================================
+    // UPLOAD 1: Listing photo (optional)
+    $listingPhotoResult = uploadFile(
+        'listing_photo',
+        __DIR__ . '/../uploads/listings',
+        ['image/jpeg', 'image/png'],
+        3 * 1024 * 1024
+    );
     $listingPhotoPath = null;
+    if ($listingPhotoResult !== null) {
+        if (strpos($listingPhotoResult, '/') === false) {
+            $errors[] = "Listing photo: " . $listingPhotoResult;
+        } else {
+            $listingPhotoPath = $listingPhotoResult;
+        }
+    }
+
+    // UPLOAD 2: Care sheet PDF (optional)
+    $careSheetResult = uploadFile(
+        'care_sheet',
+        __DIR__ . '/../uploads/caresheets',
+        ['application/pdf'],
+        3 * 1024 * 1024
+    );
     $careSheetPath = null;
+    if ($careSheetResult !== null) {
+        if (strpos($careSheetResult, '/') === false) {
+            $errors[] = "Care sheet: " . $careSheetResult;
+        } else {
+            $careSheetPath = $careSheetResult;
+        }
+    }
 
     // ============================================
     // STEP 9: INSERT INTO DATABASE
@@ -502,6 +533,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </small>
                             </div>
 
+                                <!-- Listing Photo Upload -->
+                                <div class="mb-3">
+                                    <label for="listing_photo" class="form-label">Listing Photo (Optional)</label>
+                                    <input 
+                                        type="file" 
+                                        id="listing_photo" 
+                                        name="listing_photo" 
+                                        class="form-control" 
+                                        accept=".jpg, .jpeg, .png"
+                                    >
+                                    <small class="text-muted d-block mt-1">
+                                        JPG or PNG format. Maximum file size: 3MB. A clear photo helps responders understand your plant's needs.
+                                    </small>
+                                </div>
+
+                                <!-- Care Sheet PDF Upload -->
+                                <div class="mb-3">
+                                    <label for="care_sheet" class="form-label">Care Sheet PDF (Optional)</label>
+                                    <input 
+                                        type="file" 
+                                        id="care_sheet" 
+                                        name="care_sheet" 
+                                        class="form-control" 
+                                        accept=".pdf"
+                                    >
+                                    <small class="text-muted d-block mt-1">
+                                        PDF format only. Maximum file size: 3MB. Upload a care guide for your plants if available.
+                                    </small>
+                                </div>
                             <!-- Date Range Inputs -->
                             <!-- row = creates a horizontal layout container -->
                             <!-- On mobile, both inputs will stack (col-12 = full width) -->
