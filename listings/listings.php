@@ -261,8 +261,9 @@ try {
                     // btn-success = Green button
                     // w-100 = Width 100% (full width button, good for mobile)
                     // d-grid = Display grid (makes button full width)
-                    echo "      <div class=\"d-grid\">";
-                    echo "        <a href=\"listing-details.php?id=" . $listingID . "\" class=\"btn btn-success\">View Details</a>";
+                    // Buttons: stacked on mobile, single full-width button on md+ to match My Listings style
+                    echo "      <div class=\"d-grid gap-2 d-md-flex\">";
+                    echo "        <a href=\"listing-details.php?id=" . $listingID . "\" class=\"btn btn-success flex-md-fill\">View Details</a>";
                     echo "      </div>";
                     
                     echo "    </div>";  // Close card-body
