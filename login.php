@@ -11,7 +11,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $adminPassword='$2y$10$u/zz7qWZplIswzdhUeR59OcN7lgri0tjW0PsBsCwhlHIuu9H2tMsS';
 
 
-
     $username = trim($_POST["username"] ?? "");
     $password = trim($_POST["password"] ?? "");
 
@@ -25,7 +24,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 ?>
 <!DOCTYPE html>
 <html lang="en">
-<?php include __DIR__ . '/includes/head-includes.php'; ?>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login - plantbnb</title>
+    <?php include __DIR__ . '/includes/head-includes.php'; ?>
+</head>
 <body>
     <header class="container text-center my-4">
         <h1 class="site-brand" id="site-title">
@@ -51,9 +55,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                         <button type="submit" class="btn btn-success">Login</button>
                     </div>
                 </form>
-    <?php include __DIR__ . '/includes/footer.php'; ?>
-</body>
-</html>
+            </div>
+        </div>
+    </main>
+
     <?php include __DIR__ . '/includes/footer.php'; ?>
 </body>
 </html>
