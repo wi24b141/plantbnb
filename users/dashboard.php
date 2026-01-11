@@ -313,8 +313,8 @@ try {
 
                 <!-- Create Listing Card -->
                 <div class="col-12 col-md-4">
-                    <!-- Link to listing creator page -->
-                    <a href="/plantbnb/listings/listing-creator.php" class="text-decoration-none">
+                            <!-- Link to listing creator page -->
+                            <a href="/plantbnb/listings/listing-creator.php" class="text-decoration-none">
                         <div class="card shadow-sm h-100 text-center p-3">
                             <!-- Icon emoji for creating new listing -->
                             <div class="mb-2" style="font-size: 2.5rem;">
