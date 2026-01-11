@@ -4,20 +4,17 @@ require_once __DIR__ . '/../includes/db.php';
 
 
 // ============================================================
-// STEP 2: Initialize variables
+// STEP 1: Initialize variables
 // ============================================================
 
 // Create an empty error message variable
-// We set it to empty string now, and will fill it with error text if login fails
-// Why? Because we need this variable to exist even if the user hasn't submitted the form yet
 $loginError = '';
 
-
 // ============================================================
-// STEP 3: Check if the user submitted the login form
+// STEP 2: Check if the user submitted the login form
 // ============================================================
 
-// $_SERVER["REQUEST_METHOD"] tells us HOW the page was loaded
+// $_SERVER["REQUEST_METHOD"] tells HOW the page was loaded
 // "GET" = user just visited the page (by clicking a link)
 // "POST" = user submitted a form on this page
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
@@ -27,61 +24,46 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // -----------------------------------------------------------
     
     // Get the username that the user typed in the form
-    // $_POST["username"] gets the value from the input field with name="username"
-    // trim() removes spaces from the beginning and end
-    // ?? "" means "if username doesn't exist in $_POST, use empty string instead"
     $username = trim($_POST["username"] ?? "");
     
     // Get the password that the user typed in the form
-    // Same process as username
     $password = trim($_POST["password"] ?? "");
     
     // Get the "remember me" checkbox value
     // If the checkbox was checked, $_POST["remember_me"] will be "on"
     // If not checked, it won't exist in $_POST at all
-    // isset() checks if the variable exists
     $rememberMe = isset($_POST["remember_me"]);
-    
     
     // -----------------------------------------------------------
     // STEP 3B: Validate that the user filled in both fields
     // -----------------------------------------------------------
     
-    // empty() returns true if a variable is an empty string
     // We check BOTH fields to make sure neither is empty
     if (empty($username) || empty($password)) {
         // If either field is empty, set an error message
-        // This error will be displayed in the HTML below
         $loginError = "Please enter both username and password.";
         
     } else {
         // Both fields are filled, so we can try to log the user in
-        
         
         // -----------------------------------------------------------
         // STEP 3C: Look up the user in the database
         // -----------------------------------------------------------
         
         // Build a SQL query to find a user with the matching username
-        // We SELECT three columns: user_id, username, and password_hash
-        // :username is a placeholder (we fill it in below)
-        // Why placeholder? To prevent SQL injection attacks
+        // :username is a placeholder
         $query = "SELECT user_id, username, password_hash FROM users WHERE username = :username";
         
         // Prepare the query for execution
-        // This creates a PDO statement object that is safe from SQL injection
         $statement = $connection->prepare($query);
         
         // Replace the :username placeholder with the actual username from the form
-        // PDO::PARAM_STR means we are binding a string value
         $statement->bindParam(':username', $username, PDO::PARAM_STR);
         
         // Execute the query (actually run it on the database)
         $statement->execute();
         
         // Fetch the result from the database
-        // fetch() gets ONE row from the results
-        // PDO::FETCH_ASSOC means "return the row as an associative array"
         // If no user found, $user will be false (or null)
         $user = $statement->fetch(PDO::FETCH_ASSOC);
         
@@ -92,7 +74,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         
         // We need to check TWO things:
         // 1. Did we find a user? ($user will be an array if yes, false if no)
-        // 2. Does the password match? (use password_verify to check)
+        // 2. Does the password match?
         
         // password_verify() compares the plain text password with the hashed password
         // It returns true if they match, false if they don't
@@ -175,7 +157,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 ?>
-
 
 <!-- ============================================================ -->
 <!-- HTML SECTION STARTS HERE                                     -->

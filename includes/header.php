@@ -2,51 +2,46 @@
 // ============================================================
 // STEP 1: Start the session
 // ============================================================
-
+ 
 // Check if a session is already started
-// session_status() tells us the current state of sessions
+// session_status() tells the current state of sessions
 // PHP_SESSION_NONE means no session exists yet
 if (session_status() === PHP_SESSION_NONE) {
     // Start a new session
-    // This allows us to use $_SESSION to store data across pages
+    // This allows to use $_SESSION to store data across pages
     session_start();
 }
-
 
 // ============================================================
 // STEP 2: Check if user is logged in via SESSION
 // ============================================================
 
 // $_SESSION['loggedIn'] is set to true in login.php after successful login
-// isset() checks if the variable exists
-// We check BOTH that it exists AND that it equals true
+// We check BOTH that it exists nd that it equals true
 $isLoggedIn = isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] === true;
-
 
 // ============================================================
 // STEP 3: If not logged in, check for "Remember Me" cookie
 // ============================================================
 
-// If the user is NOT logged in via session...
+// If the user is NOT logged in via session:
 if (!$isLoggedIn) {
     // Check if a "remember_token" cookie exists
     // Cookies are stored in the $_COOKIE array
-    // isset() checks if the cookie exists
     if (isset($_COOKIE['remember_token'])) {
-        // The cookie exists! This means the user chose "Remember Me" before
-        
+        // The cookie exists: This means the user chose "Remember Me" before
         // Get the token value from the cookie
         $rememberToken = $_COOKIE['remember_token'];
         
         // Load the database connection
-        // We need this to look up the user by their token
+        // look up the user by their token:
         require_once __DIR__ . '/db.php';
         
         // Look up the user in the database by their remember token
-        // We SELECT the user_id and username for the user with this token
+        // SELECT the user_id and username for the user with this token
         $query = "SELECT user_id, username FROM users WHERE remember_token = :token";
         
-        // Prepare the query (prevents SQL injection)
+        // Prepare the query
         $statement = $connection->prepare($query);
         
         // Bind the token parameter
@@ -62,7 +57,7 @@ if (!$isLoggedIn) {
         
         // Check if we found a user
         if ($user) {
-            // SUCCESS! The token is valid and matches a user
+            // The token is valid and matches a user
             
             // Log the user in by setting session variables
             // This is the same as what we do in login.php
@@ -72,6 +67,7 @@ if (!$isLoggedIn) {
             
             // Update the $isLoggedIn variable
             $isLoggedIn = true;
+
         } else {
             // The token is invalid or expired
             // Delete the cookie so the browser stops sending it
@@ -82,7 +78,6 @@ if (!$isLoggedIn) {
     }
 }
 
-
 // ============================================================
 // STEP 4: Get username and current page
 // ============================================================
@@ -92,7 +87,7 @@ if (!$isLoggedIn) {
 $username = $_SESSION['username'] ?? '';
 
 // Get the current page filename
-// basename() extracts just the filename from the full path
+// basename() extracts  the filename from the full path
 // Example: "/plantbnb/users/login.php" becomes "login.php"
 $currentPage = basename($_SERVER['PHP_SELF']);
 ?>
@@ -174,12 +169,15 @@ $currentPage = basename($_SERVER['PHP_SELF']);
         <!-- Toggle checkbox and icon -->
         <input type="checkbox" id="menu-toggle" class="menu-toggle" />
         <label for="menu-toggle" class="menu-icon">&#9776;</label>
+         <!-- Navigation links -->
         <ul class="navbar-menu">
             <li><a class="nav-link <?php if ($currentPage == 'index.php') echo ' active'; ?>" href="/plantbnb/index.php">Home</a></li>
             <li><a class="nav-link <?php if ($currentPage == 'help.php') echo ' active'; ?>" href="/plantbnb/help.php">Help</a></li>
             <li><a class="nav-link <?php if ($currentPage == 'listings.php') echo ' active'; ?>" href="/plantbnb/listings/listings.php">Browse Listings</a></li>
             <li><a class="nav-link <?php if ($currentPage == 'listing-creator.php') echo ' active'; ?>" href="/plantbnb/listings/listing-creator.php">Create Listing</a></li>
+           
             <?php if ($isLoggedIn) { ?>
+                 <!-- Links visible ONLY when the user is logged in -->
                 <li><a class="nav-link <?php if ($currentPage == 'favoritelistings.php') echo ' active'; ?>" href="/plantbnb/listings/favoritelistings.php">Favorites</a></li>
                 <li><a class="nav-link <?php if ($currentPage == 'rate-user.php') echo ' active'; ?>" href="/plantbnb/users/rate-user.php">Rating</a></li>
                 <li><a class="nav-link <?php if ($currentPage == 'messages.php') echo ' active'; ?>" href="/plantbnb/users/messages.php">Messages</a></li>
@@ -191,7 +189,9 @@ $currentPage = basename($_SERVER['PHP_SELF']);
                     </span>
                 </li>
                 <li><a class="nav-link <?php if ($currentPage == 'logout.php') echo ' active'; ?>" href="/plantbnb/users/logout.php">Logout</a></li>
-            <?php } else { ?>
+           
+                <?php } else { ?>
+                    <!-- Links visible ONLY when the user is NOT logged in -->
                 <li><a class="nav-link <?php if ($currentPage == 'login.php') echo ' active'; ?>" href="/plantbnb/users/login.php">Login</a></li>
                 <li><a class="nav-link <?php if ($currentPage == 'registration.php') echo ' active'; ?>" href="/plantbnb/users/registration.php">Register</a></li>
             <?php } ?>

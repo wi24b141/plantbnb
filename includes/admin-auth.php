@@ -6,11 +6,17 @@
 // Include this file at the top of any admin-only page
 // It will automatically redirect non-admins away
 
+// ============================================
 // STEP 1: Make sure user is logged in first
+// ============================================
+
 // This file checks if user has an active session
 require_once __DIR__ . '/user-auth.php';
 
+// ============================================
 // STEP 2: Connect to database
+// ============================================
+
 // We need the database connection to check the user's role
 require_once __DIR__ . '/db.php';
 
@@ -67,6 +73,6 @@ if ($currentUserRole !== 'admin') {
     exit();
 }
 
-// If we reach this point, the user is confirmed to be an admin
+// Else, the user is confirmed to be an admin
 // The admin page can now safely display admin content
 ?>
