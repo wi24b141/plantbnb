@@ -172,6 +172,22 @@ INSERT INTO `users` (`user_id`, `username`, `email`, `password_hash`, `profile_p
 (2, 'Alois', 'alois@email.com', '$2y$10$0eZq7gcaxMxt3R8Gd46OyeZWd8ZkxkLZZlgVsNOWJsQzX/sNCHp5K', 'uploads/profiles/695dc4ec49796_istockphoto-959866606-612x612.jpg', 'uploads/verification/69602f9e5f8f7_austrian drivers licence dummy.jpg', 'Hello my name is Alois.', 'user', 1, '2026-01-07 02:28:34', NULL),
 (3, 'antonia', 'antonia@gmail.com', '$2y$10$5q26KimyhT17M.2i9BDvqOBnFehJT9JsdhyJrho/4IltJL/eB3gjy', 'uploads/profiles/69604669ca273_Tabby_cat_with_visible_nictitating_membrane.jpg', NULL, 'Hello I am Antonia!', 'user', 0, '2026-01-09 00:03:36', NULL);
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `password_resets`
+--
+
+CREATE TABLE `password_resets` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `token` varchar(128) NOT NULL,
+  `expires_at` datetime NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- No initial data for `password_resets`
+
 --
 -- Indexes for dumped tables
 --
@@ -230,6 +246,14 @@ ALTER TABLE `users`
   ADD KEY `idx_remember_token` (`remember_token`);
 
 --
+-- Indexes for table `password_resets`
+--
+ALTER TABLE `password_resets`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_user_id` (`user_id`),
+  ADD KEY `idx_expires_at` (`expires_at`);
+
+--
 -- AUTO_INCREMENT for dumped tables
 --
 
@@ -270,6 +294,12 @@ ALTER TABLE `users`
   MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
+-- AUTO_INCREMENT for table `password_resets`
+--
+ALTER TABLE `password_resets`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1;
+
+--
 -- Constraints for dumped tables
 --
 
@@ -305,6 +335,11 @@ ALTER TABLE `plants`
 ALTER TABLE `ratings`
   ADD CONSTRAINT `ratings_ibfk_1` FOREIGN KEY (`rater_user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `ratings_ibfk_2` FOREIGN KEY (`rated_user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
+--
+-- Constraints for table `password_resets`
+--
+ALTER TABLE `password_resets`
+  ADD CONSTRAINT `password_resets_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
