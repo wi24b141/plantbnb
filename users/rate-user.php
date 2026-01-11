@@ -65,35 +65,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // WHY: We use try-catch to handle database errors safely
         
         try {
-            
-            // Write the SQL query to insert a new rating
-            // WHY: We need to save who rated whom and the rating value
-            $insertQuery = "
-                INSERT INTO ratings 
-                (rater_user_id, rated_user_id, rating)
-                VALUES
-                (:raterUserID, :ratedUserID, :rating)
-            ";
-            
-            // PREPARE the SQL query
-            // WHY: This separates SQL code from data to prevent SQL injection attacks
-            $insertStatement = $connection->prepare($insertQuery);
-            
-            // BIND all the parameters
-            // WHY: This safely inserts our data into the SQL query
-            $insertStatement->bindParam(':raterUserID', $currentUserID, PDO::PARAM_INT);
-            $insertStatement->bindParam(':ratedUserID', $ratedUserID, PDO::PARAM_INT);
-            $insertStatement->bindParam(':rating', $rating, PDO::PARAM_INT);
-            
-            // EXECUTE the query
-            // WHY: This actually saves the rating to the database
-            $insertStatement->execute();
-            
-            // Show success message
-            $successMessage = 'Rating submitted successfully!';
-            
+            // SIMPLE DUPLICATE CHECK: prevent the same user rating the same target more than once
+            $checkQuery = "SELECT rating_id FROM ratings WHERE rater_user_id = :raterUserID AND rated_user_id = :ratedUserID";
+            $checkStmt = $connection->prepare($checkQuery);
+            $checkStmt->bindParam(':raterUserID', $currentUserID, PDO::PARAM_INT);
+            $checkStmt->bindParam(':ratedUserID', $ratedUserID, PDO::PARAM_INT);
+            $checkStmt->execute();
+
+            // If a row exists, block duplicate
+            if ($checkStmt->fetch(PDO::FETCH_ASSOC)) {
+                $errorMessage = 'You have already rated this user.';
+            } else {
+                // Write the SQL query to insert a new rating
+                $insertQuery = "
+                    INSERT INTO ratings 
+                    (rater_user_id, rated_user_id, rating)
+                    VALUES
+                    (:raterUserID, :ratedUserID, :rating)
+                ";
+
+                // PREPARE and execute insert
+                $insertStatement = $connection->prepare($insertQuery);
+                $insertStatement->bindParam(':raterUserID', $currentUserID, PDO::PARAM_INT);
+                $insertStatement->bindParam(':ratedUserID', $ratedUserID, PDO::PARAM_INT);
+                $insertStatement->bindParam(':rating', $rating, PDO::PARAM_INT);
+                $insertStatement->execute();
+
+                $successMessage = 'Rating submitted successfully!';
+            }
+
         } catch (PDOException $error) {
-            // If database error occurs, save the error message
             $errorMessage = 'Database error: ' . $error->getMessage();
         }
     }

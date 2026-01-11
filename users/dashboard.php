@@ -76,6 +76,30 @@ try {
     $errorMessage = "Database error: " . $error->getMessage();
 }
 
+// ============================================
+// STEP 5: FETCH RATING SUMMARY FOR THIS USER
+// ============================================
+// WHY: We show the user's average rating and count on their profile
+$avgRating = null;
+$ratingCount = 0;
+try {
+    $ratingQuery = "
+        SELECT AVG(rating) AS avg_rating, COUNT(*) AS rating_count
+        FROM ratings
+        WHERE rated_user_id = :userID
+    ";
+    $ratingStmt = $connection->prepare($ratingQuery);
+    $ratingStmt->bindParam(':userID', $userID, PDO::PARAM_INT);
+    $ratingStmt->execute();
+    $ratingRow = $ratingStmt->fetch(PDO::FETCH_ASSOC);
+    if ($ratingRow) {
+        $avgRating = $ratingRow['avg_rating'] !== null ? round((float)$ratingRow['avg_rating'], 1) : null;
+        $ratingCount = intval($ratingRow['rating_count']);
+    }
+} catch (PDOException $error) {
+    // silently ignore rating errors; profile still shows
+}
+
 ?>
 
 <!-- ============================================================ -->
@@ -204,6 +228,17 @@ try {
                                     <!-- Display username -->
                                     <h5 class="mb-2">
                                         <?php echo $safeUsername; ?>
+                                        <?php
+                                            if ($avgRating !== null) {
+                                                // Show star and average with count
+                                                echo ' <span class="badge bg-warning text-dark ms-2">⭐ ' . htmlspecialchars($avgRating) . '</span>';
+                                                if ($ratingCount > 0) {
+                                                    echo ' <small class="text-muted">(' . $ratingCount . ')</small>';
+                                                }
+                                            } else {
+                                                echo ' <small class="text-muted ms-2">(no ratings yet)</small>';
+                                            }
+                                        ?>
                                     </h5>
                                     
                                     <!-- Display email address -->
@@ -313,8 +348,8 @@ try {
 
                 <!-- Create Listing Card -->
                 <div class="col-12 col-md-4">
-                    <!-- Link to listing creator page -->
-                    <a href="/plantbnb/listings/listing-creator.php" class="text-decoration-none">
+                            <!-- Link to listing creator page -->
+                            <a href="/plantbnb/listings/listing-creator.php" class="text-decoration-none">
                         <div class="card shadow-sm h-100 text-center p-3">
                             <!-- Icon emoji for creating new listing -->
                             <div class="mb-2" style="font-size: 2.5rem;">
