@@ -515,9 +515,21 @@ try {
                             ?>
                             
                             <!-- Contact Button -->
-                            <a href="../users/messages.php" class="btn btn-success">
-                                Contact Seller
-                            </a>
+                            <?php
+                                // If user is logged in, only allow contacting if they are NOT the listing author
+                                if ($isLoggedIn) {
+                                    if (isset($_SESSION['user_id']) && intval($_SESSION['user_id']) === $authorUserID) {
+                                        // Do not allow contacting yourself - show disabled button instead
+                                        echo '<button class="btn btn-secondary" disabled>It\'s your listing</button>';
+                                    } else {
+                                        // Link directly to the conversation with the listing author
+                                        echo '<a href="../users/message-conversation.php?user_id=' . intval($authorUserID) . '" class="btn btn-success">Contact Seller</a>';
+                                    }
+                                } else {
+                                    // Not logged in - prompt to login first
+                                    echo '<a href="../users/login.php" class="btn btn-outline-secondary">Login to Contact</a>';
+                                }
+                            ?>
                         </div>
                     </div>
                 </div>

@@ -174,6 +174,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
             <li><a class="nav-link <?php if ($currentPage == 'index.php') echo ' active'; ?>" href="/plantbnb/index.php">Home</a></li>
             <li><a class="nav-link <?php if ($currentPage == 'help.php') echo ' active'; ?>" href="/plantbnb/help.php">Help</a></li>
             <li><a class="nav-link <?php if ($currentPage == 'listings.php') echo ' active'; ?>" href="/plantbnb/listings/listings.php">Browse Listings</a></li>
+            <li><a class="nav-link <?php if ($currentPage == 'my-listings.php') echo ' active'; ?>" href="/plantbnb/listings/my-listings.php">My Listings</a></li>
             <li><a class="nav-link <?php if ($currentPage == 'listing-creator.php') echo ' active'; ?>" href="/plantbnb/listings/listing-creator.php">Create Listing</a></li>
            
             <?php if ($isLoggedIn) { ?>
