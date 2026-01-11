@@ -6,44 +6,79 @@ $activeListings = array();
 $errorMessage = '';
 
 try {
-    // NOTE: This query demonstrates an INNER JOIN between listings and users tables.
-    // The JOIN is necessary because listing data is normalized across two tables.
-    // We select from listings but need the username from the users table.
-    $sqlQuery = "
-        SELECT 
-            listings.listing_id,
-            listings.title,
-            listings.location_approx,
-            listings.start_date,
-            listings.end_date,
-            listings.listing_type,
-            listings.listing_photo_path,
-            users.username
-        FROM listings
-        INNER JOIN users ON listings.user_id = users.user_id
-        WHERE listings.status = 'active'
-    ";
-
-    // Conditional filtering: exclude current user's listings from browse view
+    // NOTE: We check if someone is logged in first.
+    // If they ARE logged in, we hide THEIR listings from the browse page.
+    // If they are NOT logged in (guest), we show ALL active listings.
+    
     if (isset($_SESSION['user_id']) && intval($_SESSION['user_id']) > 0) {
-        $sqlQuery .= "\n        AND listings.user_id != :current_user_id\n    ";
-    }
-
-    $sqlQuery .= "\n        ORDER BY listings.created_at DESC\n    ";
-
-    // NOTE: PDO prepared statements separate SQL logic from user data, preventing
-    // SQL injection attacks by treating parameters as data rather than executable code.
-    $statement = $connection->prepare($sqlQuery);
-
-    // Bind parameter with explicit type casting for additional security
-    if (isset($_SESSION['user_id']) && intval($_SESSION['user_id']) > 0) {
+        // LOGGED IN USER: Exclude their own listings
+        
+        // NOTE: This query uses an INNER JOIN to combine listings and users tables.
+        // We need data from BOTH tables (listing details + username).
+        $sqlQuery = "
+            SELECT 
+                listings.listing_id,
+                listings.title,
+                listings.location_approx,
+                listings.start_date,
+                listings.end_date,
+                listings.listing_type,
+                listings.listing_photo_path,
+                users.username
+            FROM listings
+            INNER JOIN users ON listings.user_id = users.user_id
+            WHERE listings.status = 'active'
+            AND listings.user_id != :current_user_id
+            ORDER BY listings.created_at DESC
+        ";
+        
+        // NOTE: Prepare the SQL query. This creates a "template" that keeps
+        // the SQL code separate from user data. The :current_user_id is a placeholder.
+        $statement = $connection->prepare($sqlQuery);
+        
+        // NOTE: Convert session user_id to integer to ensure it's a number.
+        // This is extra protection against someone tampering with the session.
         $currentUserId = intval($_SESSION['user_id']);
+        
+        // NOTE: bindValue() fills in the :current_user_id placeholder with the actual number.
+        // PDO::PARAM_INT tells the database "this is an integer, not text".
+        // This prevents SQL injection because the value is treated as DATA, not CODE.
         $statement->bindValue(':current_user_id', $currentUserId, PDO::PARAM_INT);
+        
+        // Execute the query with the bound parameter
+        $statement->execute();
+        
+    } else {
+        // GUEST USER: Show all active listings
+        
+        // NOTE: This is the simpler query for guests. No placeholders needed
+        // because we are not using any user input in this query.
+        $sqlQuery = "
+            SELECT 
+                listings.listing_id,
+                listings.title,
+                listings.location_approx,
+                listings.start_date,
+                listings.end_date,
+                listings.listing_type,
+                listings.listing_photo_path,
+                users.username
+            FROM listings
+            INNER JOIN users ON listings.user_id = users.user_id
+            WHERE listings.status = 'active'
+            ORDER BY listings.created_at DESC
+        ";
+        
+        // NOTE: Even though there are no placeholders, we still use prepare()
+        // as a security best practice. It's the safe way to run queries.
+        $statement = $connection->prepare($sqlQuery);
+        
+        // Execute the query (no parameters to bind)
+        $statement->execute();
     }
-
-    $statement->execute();
-
-    // Fetch as associative array for easy access via column names
+    
+    // NOTE: Fetch all results as an associative array.
+    // FETCH_ASSOC means we access data using column names like $row['title']
     $activeListings = $statement->fetchAll(PDO::FETCH_ASSOC);
 
 } catch (PDOException $error) {

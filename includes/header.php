@@ -1,6 +1,33 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
+    // Secure session configuration
+    ini_set('session.cookie_httponly', 1);
+    // session.cookie_secure must be set to 1 in production with HTTPS
+    ini_set('session.cookie_secure', 1); // Requires HTTPS
+    ini_set('session.cookie_samesite', 'Strict');
+    ini_set('session.use_strict_mode', 1);
+    ini_set('session.use_only_cookies', 1);
+    ini_set('session.cookie_lifetime', 0); // Session cookie expires when browser closes
+    ini_set('session.gc_maxlifetime', 3600); // 1 hour session lifetime
+    
     session_start();
+    
+    // Session timeout check (1 hour of inactivity)
+    if (isset($_SESSION['LAST_ACTIVITY']) && (time() - $_SESSION['LAST_ACTIVITY'] > 3600)) {
+        session_unset();
+        session_destroy();
+        session_start();
+    }
+    $_SESSION['LAST_ACTIVITY'] = time();
+    
+    // Regenerate session ID periodically to prevent fixation
+    if (!isset($_SESSION['CREATED'])) {
+        $_SESSION['CREATED'] = time();
+    } else if (time() - $_SESSION['CREATED'] > 1800) {
+        // Regenerate session every 30 minutes
+        session_regenerate_id(true);
+        $_SESSION['CREATED'] = time();
+    }
 }
 
 $isLoggedIn = isset($_SESSION['loggedIn']) && $_SESSION['loggedIn'] === true;
@@ -18,9 +45,13 @@ if (!$isLoggedIn) {
         $user = $statement->fetch(PDO::FETCH_ASSOC);
 
         if ($user) {
+            // Regenerate session ID on authentication to prevent session fixation
+            session_regenerate_id(true);
+            
             $_SESSION["loggedIn"] = true;
             $_SESSION["user_id"] = $user['user_id'];
             $_SESSION["username"] = $user['username'];
+            $_SESSION['CREATED'] = time();
 
             $isLoggedIn = true;
 
