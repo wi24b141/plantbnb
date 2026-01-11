@@ -164,167 +164,60 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <!DOCTYPE html>
 <html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- viewport makes the page work on mobile phones -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - PlantBnB</title>
+</head>
 <body>
-    <!-- <main> is the main content area of the page -->
-    <!-- container: Bootstrap class that centers content and adds padding on sides -->
-    <!-- py-4: Bootstrap class that adds padding on top and bottom -->
-    <main class="container py-4">
-        
-        <!-- Bootstrap Grid System (Mobile-First Design) -->
-        <!-- row: Creates a horizontal row for grid columns -->
-        <!-- justify-content-center: Centers the columns horizontally -->
-        <div class="row justify-content-center">
-            
-            <!-- Column Sizing (MOBILE-FIRST):
-                 col-12 = On mobile (small screens), take up all 12 columns (full width)
-                 col-md-8 = On tablets (medium screens), take up 8 out of 12 columns
-                 col-lg-5 = On desktops (large screens), take up 5 out of 12 columns
-                 This makes the form full-width on phones, narrower on tablets/desktops -->
-            <div class="col-12 col-md-8 col-lg-5">
-                
-                <!-- Page Title -->
-                <!-- mb-3: Margin bottom (spacing below the heading) -->
-                <!-- text-center: Center align the text -->
-                <h2 class="mb-3 text-center">Login</h2>
-
-                
-                <!-- ============================================ -->
-                <!-- Display Error Message (if login failed)      -->
-                <!-- ============================================ -->
-                <?php
-                    // Check if there is an error message to display
-                    // empty() returns true if the string is ""
-                    if (!empty($loginError)) {
-                        // If there IS an error, display it in a Bootstrap alert box
-                        
-                        // alert: Bootstrap class for a notification box
-                        // alert-danger: Makes the box red (for errors)
-                        // role="alert": Accessibility feature for screen readers
-                        echo "<div class=\"alert alert-danger\" role=\"alert\">";
-                        
-                        // Display the error message
-                        // htmlspecialchars() converts special characters to prevent XSS attacks
-                        // Why? If $loginError contained HTML/JavaScript, it could be dangerous
-                        echo htmlspecialchars($loginError);
-                        
-                        echo "</div>";
-                    }
-                ?>
-
-                
-                <!-- ============================================ -->
-                <!-- Login Form                                   -->
-                <!-- ============================================ -->
-                
-                <!-- Form element:
-                     action="" = Submit to the same page (login.php submits to itself)
-                     method="post" = Send data via POST (not visible in URL)
-                     
-                     Bootstrap classes:
-                     card: Creates a box with a border and rounded corners
-                     p-4: Adds padding inside the card (spacing around content)
-                     shadow-sm: Adds a small shadow effect to the card -->
-                <form action="" method="post" class="card p-4 shadow-sm">
-                    
-                    <!-- ================================ -->
-                    <!-- Username Input Field             -->
-                    <!-- ================================ -->
-                    
-                    <!-- mb-3: Margin bottom (spacing below this field) -->
-                    <!-- Why? So the inputs aren't crowded together on mobile -->
-                    <div class="mb-3">
-                        <!-- Label for the input field -->
-                        <!-- for="username": Links this label to the input with id="username" -->
-                        <!-- form-label: Bootstrap class for form labels -->
-                        <label for="username" class="form-label">Username</label>
-                        
-                        <!-- Input field for username -->
-                        <!-- type="text": A normal text input box -->
-                        <!-- id="username": Unique identifier (links to the label) -->
-                        <!-- name="username": This is the key used in $_POST["username"] -->
-                        <!-- form-control: Bootstrap class that styles the input (full width, rounded) -->
-                        <!-- required: HTML5 attribute that makes this field mandatory -->
-                        <input type="text" id="username" name="username" class="form-control" required>
+    <div class="container mt-5 mb-5">
+        <div class="row">
+            <div class="col-12 col-md-6 offset-md-3">
+                <div class="card">
+                    <div class="card-header bg-success text-white text-center">
+                        <h3 class="mb-0">Login</h3>
                     </div>
 
-                    
-                    <!-- ================================ -->
-                    <!-- Password Input Field             -->
-                    <!-- ================================ -->
-                    
-                    <!-- Same structure as username field above -->
-                    <div class="mb-3">
-                        <label for="password" class="form-label">Password</label>
-                        
-                        <!-- type="password": Makes the input show dots/asterisks instead of text -->
-                        <!-- name="password": This is the key used in $_POST["password"] -->
-                        <input type="password" id="password" name="password" class="form-control" required>
+                    <div class="card-body">
+                        <?php
+                            if (!empty($loginError)) {
+                                echo "<div class=\"alert alert-danger\" role=\"alert\">";
+                                echo htmlspecialchars($loginError);
+                                echo "</div>";
+                            }
+                        ?>
+
+                        <form action="" method="post">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" id="username" name="username" class="form-control" required value="<?php echo htmlspecialchars($_POST['username'] ?? ''); ?>">
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" id="password" name="password" class="form-control" required>
+                            </div>
+
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input type="checkbox" id="remember_me" name="remember_me" class="form-check-input" <?php if(isset($_POST['remember_me'])) { echo 'checked'; } ?>>
+                                    <label for="remember_me" class="form-check-label">Remember me for 30 days</label>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-success btn-lg">Login</button>
+                            </div>
+                        </form>
                     </div>
 
-                    
-                    <!-- ================================ -->
-                    <!-- Remember Me Checkbox             -->
-                    <!-- ================================ -->
-                    
-                    <!-- mb-3: Margin bottom (spacing below this field) -->
-                    <div class="mb-3">
-                        <!-- form-check: Bootstrap class for checkbox styling -->
-                        <div class="form-check">
-                            <!-- Checkbox Input:
-                                 type="checkbox" = Creates a checkbox (a small box you can click)
-                                 id="remember_me" = Unique identifier
-                                 name="remember_me" = The key used in $_POST["remember_me"]
-                                 class="form-check-input" = Bootstrap styling for checkboxes
-                                 
-                                 When checked: $_POST["remember_me"] will be "on"
-                                 When unchecked: $_POST["remember_me"] won't exist at all -->
-                            <input type="checkbox" id="remember_me" name="remember_me" class="form-check-input">
-                            
-                            <!-- Label for the checkbox -->
-                            <!-- for="remember_me" links this label to the checkbox -->
-                            <!-- form-check-label: Bootstrap styling for checkbox labels -->
-                            <label for="remember_me" class="form-check-label">
-                                Remember me for 30 days
-                            </label>
-                        </div>
+                    <div class="card-footer bg-light text-center">
+                        <p class="mb-0">Don't have an account? <a href="registration.php">Register here</a></p>
                     </div>
-
-                    
-                    <!-- ================================ -->
-                    <!-- Submit Button                    -->
-                    <!-- ================================ -->
-                    
-                    <!-- d-grid: Bootstrap class that makes the button full-width -->
-                    <!-- Why? On mobile, full-width buttons are easier to tap -->
-                    <div class="d-grid">
-                        <!-- type="submit": When clicked, this button submits the form -->
-                        <!-- btn: Bootstrap button class -->
-                        <!-- btn-success: Makes the button green -->
-                        <!-- btn-lg: Makes the button larger (easier to tap on mobile) -->
-                        <button type="submit" class="btn btn-success btn-lg">Login</button>
-                    </div>
-
-                    
-                    <!-- ================================ -->
-                    <!-- Link to Registration Page        -->
-                    <!-- ================================ -->
-                    
-                    <!-- hr: Horizontal line (divider) -->
-                    <!-- my-3: Margin top and bottom (spacing above and below the line) -->
-                    <hr class="my-3">
-                    
-                    <!-- text-center: Center align the text -->
-                    <!-- mb-0: Remove margin bottom (no extra space at the bottom) -->
-                    <p class="text-center mb-0">
-                        Don't have an account? 
-                        
-                        <!-- Link to the registration page -->
-                        <!-- href="registration.php": The page to navigate to when clicked -->
-                        <a href="registration.php">Register here</a>
-                    </p>
-                </form>
+                </div>
             </div>
         </div>
-    </main>
+    </div>
 </body>
 </html>
