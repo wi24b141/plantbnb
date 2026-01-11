@@ -18,7 +18,7 @@ if (!isset($isLoggedIn) || !$isLoggedIn) {
     </head>
     <body>
         <div class="container mt-5">
-            <div class="alert alert-info">Bitte <a href="/plantbnb/users/login.php">einloggen</a>, um deine Listings zu sehen.</div>
+            <div class="alert alert-info">Please <a href="/plantbnb/users/login.php">log in</a> to view your listings.</div>
         </div>
     </body>
     </html>
