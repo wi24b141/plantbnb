@@ -3,11 +3,6 @@
 // starts or RESUMES the session
 session_start();
 
-<?php
-// This command is always necessary when dealing with sessions
-// starts or RESUMES the session
-session_start();
-
 $adminUser="admin";
 $adminPassword="admin123";
 
