@@ -20,6 +20,7 @@ try {
     // Build the SQL query
     // WHY: We need data from TWO tables (listings and users)
     // The listings table has the plant info, users table has the username
+    // We will exclude listings created by the currently logged in user
     $sqlQuery = "
         SELECT 
             listings.listing_id,
@@ -33,12 +34,25 @@ try {
         FROM listings
         INNER JOIN users ON listings.user_id = users.user_id
         WHERE listings.status = 'active'
-        ORDER BY listings.created_at DESC
     ";
+
+    // If user is logged in, exclude their own listings from Browse
+    if (isset($_SESSION['user_id']) && intval($_SESSION['user_id']) > 0) {
+        $sqlQuery .= "\n        AND listings.user_id != :current_user_id\n    ";
+    }
+
+    // Always order by newest first
+    $sqlQuery .= "\n        ORDER BY listings.created_at DESC\n    ";
 
     // Prepare the statement
     // WHY: Prepared statements protect against SQL injection attacks
     $statement = $connection->prepare($sqlQuery);
+
+    // If we added the exclusion, bind the current user id parameter
+    if (isset($_SESSION['user_id']) && intval($_SESSION['user_id']) > 0) {
+        $currentUserId = intval($_SESSION['user_id']);
+        $statement->bindValue(':current_user_id', $currentUserId, PDO::PARAM_INT);
+    }
 
     // Execute the query
     // WHY: This actually runs the query and gets results from database
@@ -71,6 +85,16 @@ try {
         
         <!-- mb-4 = Margin Bottom 4 (adds space below the heading) -->
         <h2 class="mb-4">Recent Listings</h2>
+
+        <?php
+            // If the user is logged in, show a link to their own listings page
+            // WHY: The user wants their listings separated from Browse
+            if (isset($isLoggedIn) && $isLoggedIn) {
+                echo '<div class="mb-3">';
+                echo '  <a href="my-listings.php" class="btn btn-outline-primary">My Listings</a>';
+                echo '</div>';
+            }
+        ?>
 
         <!-- =================================================================== -->
         <!-- DISPLAY ERROR MESSAGE (if there was a database error)              -->
