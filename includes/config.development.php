@@ -3,6 +3,6 @@
 // This file is ignored by Git (see .gitignore)
 
 $databaseHost = 'localhost';
-$databaseName = 'plantbnb3';
+$databaseName = 'plantbnb4';
 $databaseUser = 'root';
 $databasePassword = '';
