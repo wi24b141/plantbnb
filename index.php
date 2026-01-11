@@ -28,9 +28,14 @@
                         Browse Listings
                     </a>
                     
-                    <!-- Create Listing Button -->
-                    <a href="/plantbnb/listings/listing-creator.php" class="btn btn-outline-success btn-lg">
-                        Create a Listing
+                    <!-- Create Need Button -->
+                    <a href="/plantbnb/listings/listing-creator_need.php" class="btn btn-outline-success btn-lg">
+                        Create an Plant Care Need
+                    </a>
+
+                    <!-- Create Offer Button -->
+                    <a href="/plantbnb/listings/listing-creator_offer.php" class="btn btn-outline-success btn-lg">
+                        Create an Plant Care Offer
                     </a>
                 </div>
             </div>

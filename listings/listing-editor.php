@@ -6,19 +6,26 @@ require_once __DIR__ . '/../includes/file-upload-helper.php';
 
 $userID = intval($_SESSION['user_id']);
 
+// Security Check: Verify listing ID is provided in URL
+// Without a listing ID, we cannot load or edit a listing
 if (!isset($_GET['id'])) {
     header('Location: /plantbnb/users/dashboard.php');
     exit;
 }
 
+// Convert listing ID to integer to prevent SQL injection
 $listingID = intval($_GET['id']);
 
+// Validate listing ID is a positive number
 if ($listingID <= 0) {
     header('Location: /plantbnb/users/dashboard.php');
     exit;
 }
 
+// FETCH EXISTING LISTING DATA
+// NOTE: We must verify the listing exists AND belongs to the current user
 try {
+    // Join listings and plants tables to get all listing data
     $fetchQuery = "
         SELECT 
             listings.listing_id,
@@ -46,11 +53,14 @@ try {
     $fetchStatement->execute();
     $listing = $fetchStatement->fetch(PDO::FETCH_ASSOC);
     
+    // Security Check: Verify listing exists in database
     if (!$listing) {
         header('Location: /plantbnb/users/dashboard.php');
         exit;
     }
     
+    // Security Check: Verify listing belongs to current user
+    // This prevents users from editing other people's listings
     if ($listing['user_id'] !== $userID) {
         header('Location: /plantbnb/users/dashboard.php');
         exit;
@@ -60,23 +70,31 @@ try {
     die("Database error: " . htmlspecialchars($error->getMessage()));
 }
 
+// INITIALIZE FORM VARIABLES FROM DATABASE
+// Pre-populate form fields with existing listing data
+// This allows users to see current values and make changes
 $listingType = $listing['listing_type'];
 $title = $listing['title'];
 $description = $listing['description'];
 $locationApprox = $listing['location_approx'];
 $startDate = $listing['start_date'];
 $endDate = $listing['end_date'];
+// Use null coalescing operator (??) for optional fields that might be NULL
 $experience = $listing['experience'] ?? '';
 $priceRange = $listing['price_range'] ?? '';
 $plantType = $listing['plant_type'] ?? '';
 $wateringNeeds = $listing['watering_needs'] ?? '';
 $lightNeeds = $listing['light_needs'] ?? '';
 
+// Separate error array from success string to accommodate multiple validation issues.
 $errors = [];
-$successMessage = '';
+$successMessage = '';;
 
+// PROCESS FORM SUBMISSION
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
+    // Retrieve and sanitize input using null coalescing operator (??) for safe defaults.
+    // trim() prevents whitespace-based validation bypasses.
     $listingType = trim($_POST['listing_type'] ?? '');
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
@@ -89,6 +107,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $wateringNeeds = trim($_POST['watering_needs'] ?? '');
     $lightNeeds = trim($_POST['light_needs'] ?? '');
 
+    // SERVER-SIDE VALIDATION
+    // NOTE: Server-side validation is essential because client-side validation can be bypassed
+    
+    // Validate listing type is either 'offer' or 'need'
     if (empty($listingType)) {
         $errors[] = 'Please select a valid listing type (Offer or Need).';
     } else {
@@ -97,6 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Validate title presence and length constraints
     if (empty($title)) {
         $errors[] = 'Title is required.';
     } else {
@@ -108,6 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Validate description with minimum length requirement
     if (empty($description)) {
         $errors[] = 'Description is required.';
     } else {
@@ -116,6 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Validate required fields
     if (empty($locationApprox)) {
         $errors[] = 'Location is required.';
     }
@@ -140,6 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $errors[] = 'Light Needs is required.';
     }
 
+    // Validate logical date range: end date must be after start date
     if (!empty($startDate) && !empty($endDate)) {
         $startTimestamp = strtotime($startDate);
         $endTimestamp = strtotime($endDate);
@@ -149,6 +175,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // FILE UPLOAD PROCESSING
+    // NOTE: File upload helper validates MIME types and file size to prevent malicious uploads
+    // Process optional listing photo (JPEG/PNG only, max 3MB)
     $listingPhotoResult = uploadFile(
         'listing_photo',
         __DIR__ . '/../uploads/listings',
@@ -156,6 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         3 * 1024 * 1024
     );
 
+    // Keep existing photo path if no new file uploaded
     $listingPhotoPath = $listing['listing_photo_path'];
     if ($listingPhotoResult !== null) {
         if (strpos($listingPhotoResult, '/') === false) {
@@ -165,6 +195,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Process optional care sheet PDF (max 3MB)
     $careSheetResult = uploadFile(
         'care_sheet',
         __DIR__ . '/../uploads/caresheets',
@@ -172,6 +203,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         3 * 1024 * 1024
     );
 
+    // Keep existing care sheet path if no new file uploaded
     $careSheetPath = $listing['care_sheet_path'];
     if ($careSheetResult !== null) {
         if (strpos($careSheetResult, '/') === false) {
@@ -181,8 +213,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // DATABASE TRANSACTION
+    // Proceed with database update only if validation passed
     if (empty($errors)) {
+        // NOTE: try-catch blocks handle PDOException for graceful error handling
         try {
+            // Prepare SQL UPDATE statement for listings table
+            // NOTE: PDO prepared statements with parameterized queries prevent SQL injection attacks
             $updateListingQuery = "
                 UPDATE listings 
                 SET 
@@ -201,6 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $updateListingStatement = $connection->prepare($updateListingQuery);
 
+            // Bind parameters with explicit type casting for added security
             $updateListingStatement->bindParam(':listingType', $listingType, PDO::PARAM_STR);
             $updateListingStatement->bindParam(':title', $title, PDO::PARAM_STR);
             $updateListingStatement->bindParam(':description', $description, PDO::PARAM_STR);
@@ -213,8 +251,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $updateListingStatement->bindParam(':priceRange', $priceRange, PDO::PARAM_STR);
             $updateListingStatement->bindParam(':listingID', $listingID, PDO::PARAM_INT);
 
+            // Execute the prepared statement
             $updateListingStatement->execute();
 
+            // PLANT ENTRY UPDATE
+            // Update associated plant record with foreign key reference to listing
             $updatePlantQuery = "
                 UPDATE plants 
                 SET 
@@ -235,6 +276,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $successMessage = "Your listing has been updated successfully!";
 
+            // Refresh listing data from database to show updated values
             $refreshQuery = "
                 SELECT 
                     listings.listing_id,
@@ -263,6 +305,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $listing = $refreshStatement->fetch(PDO::FETCH_ASSOC);
 
         } catch (PDOException $error) {
+            // Catch and log database exceptions for debugging while protecting sensitive information
             $errors[] = "Database error: " . $error->getMessage();
         }
     }
@@ -274,13 +317,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- Viewport meta tag enables responsive design for mobile devices -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Listing - PlantBnB</title>
 </head>
 <body>
+    <!-- Main container: Bootstrap responsive grid with top margin -->
     <div class="container mt-4">
         
+        <!-- Navigation: Back to Dashboard -->
         <div class="row mb-3">
+            <!-- col-md-10 offset-md-1 centers content horizontally on medium+ screens -->
             <div class="col-12 col-md-10 offset-md-1">
                 <a href="/plantbnb/users/dashboard.php" class="btn btn-outline-secondary btn-sm">
                     ← Back to Dashboard
@@ -288,11 +335,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
 
+        <!-- Success Feedback -->
         <?php
             if (!empty($successMessage)) {
+                // Bootstrap alert-success component with dismiss functionality
                 echo "<div class=\"row mb-3\">";
                 echo "  <div class=\"col-12 col-md-10 offset-md-1\">";
                 echo "    <div class=\"alert alert-success alert-dismissible fade show\" role=\"alert\">";
+                
+                // NOTE: htmlspecialchars() prevents XSS by encoding HTML entities
                 echo htmlspecialchars($successMessage);
                 
                 echo "      <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"alert\" aria-label=\"Close\"></button>";
@@ -302,11 +353,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         ?>
 
+        <!-- Validation Error Feedback -->
         <?php
             if (!empty($errors)) {
+                // Bootstrap alert-danger component for validation errors
                 echo "<div class=\"row mb-3\">";
                 echo "  <div class=\"col-12 col-md-10 offset-md-1\">";
-                echo "    <div class=\"alert alert-danger\" role=\"alert\">";
+                echo "    <div class=\"alert alert-danger\" role=\"alert\">";;
                 echo "      <strong>Please fix the following errors:</strong>";
                 echo "      <ul class=\"mb-0 mt-2\">";
 
@@ -325,21 +378,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         ?>
 
+        <!-- Main Content: Edit Listing Form Card -->
         <div class="row mb-5">
             <div class="col-12 col-md-10 offset-md-1">
+                <!-- Bootstrap card component with subtle shadow -->
                 <div class="card shadow-sm">
                     
+                    <!-- Card Header Section -->
                     <div class="card-header bg-success text-white">
                         <h3 class="mb-0">Edit Listing</h3>
                         <p class="mb-0 small">Update your plant care listing</p>
                     </div>
 
+                    <!-- Card Body: Form Content -->
                     <div class="card-body">
                         
+                        <!-- EDIT LISTING FORM -->
+                        <!-- NOTE: enctype="multipart/form-data" is required for file uploads to work correctly -->
                         <form method="POST" action="" enctype="multipart/form-data">
                             
+                            <!-- SECTION 1: Basic Listing Information -->
                             <h5 class="mb-3">Basic Information</h5>
 
+                            <!-- Listing Type Field -->
                             <div class="mb-3">
                                 <label for="listing_type" class="form-label">Listing Type *</label>
                                 
@@ -391,6 +452,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </small>
                             </div>
 
+                            <!-- Listing Photo Upload -->
                             <div class="mb-3">
                                 <label for="listing_photo" class="form-label">Listing Photo (Optional)</label>
                                 
@@ -406,6 +468,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </small>
                             </div>
 
+                            <!-- Care Sheet PDF Upload -->
                             <div class="mb-3">
                                 <label for="care_sheet" class="form-label">Care Sheet PDF (Optional)</label>
                                 
@@ -423,6 +486,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <hr class="my-4">
 
+                            <!-- SECTION 2: Location and Availability -->
                             <h5 class="mb-3">Location & Availability</h5>
 
                             <div class="mb-3">
@@ -441,11 +505,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </small>
                             </div>
 
+                            <!-- Date Range: Responsive two-column layout -->
+                            <!-- Uses Bootstrap grid: stacks on mobile, side-by-side on medium+ screens -->
                             <div class="row">
                                 
+                                <!-- Start Date -->
+                                <!-- col-12 = full width on mobile -->
+                                <!-- col-md-6 = half width on medium screens and up (desktop) -->
                                 <div class="col-12 col-md-6 mb-3">
                                     <label for="start_date" class="form-label">Start Date *</label>
                                     
+                                    <!-- type="date" = creates a date picker -->
+                                    <!-- The browser shows a calendar popup when clicked -->
                                     <input 
                                         type="date" 
                                         id="start_date" 
@@ -457,6 +528,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                     <small class="text-muted d-block mt-1">When does this listing become active?</small>
                                 </div>
 
+                                <!-- End Date -->
                                 <div class="col-12 col-md-6 mb-3">
                                     <label for="end_date" class="form-label">End Date *</label>
                                     <input 
@@ -473,6 +545,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <hr class="my-4">
 
+                            <!-- SECTION 3: Plant Details -->
                             <h5 class="mb-3">Plant Information</h5>
 
                             <div class="mb-3">
@@ -491,6 +564,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </small>
                             </div>
 
+                            <!-- Watering Needs Textarea -->
                             <div class="mb-3">
                                 <label for="watering_needs" class="form-label">Watering Needs *</label>
                                 <textarea 
@@ -506,6 +580,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </small>
                             </div>
 
+                            <!-- Light Needs Textarea -->
                             <div class="mb-3">
                                 <label for="light_needs" class="form-label">Light Needs *</label>
                                 <textarea 
@@ -523,6 +598,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <hr class="my-4">
 
+                            <!-- SECTION 4: Optional Details -->
                             <h5 class="mb-3">Additional Details (Optional)</h5>
 
                             <div class="mb-3">
@@ -540,6 +616,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </small>
                             </div>
 
+                            <!-- Price Range Input -->
                             <div class="mb-3">
                                 <label for="price_range" class="form-label">Price Range</label>
                                 <input 
@@ -557,6 +634,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                             <hr class="my-4">
 
+                            <!-- Submit Button: Full-width on mobile using d-grid -->
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-success btn-lg">
                                     Update Listing

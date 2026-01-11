@@ -1,9 +1,10 @@
 <?php
-// Database connection parameters for local development environment
-$databaseHost = 'localhost';
-$databaseName = 'plantbnb3';
-$databaseUser = 'root';
-$databasePassword = '';
+// This is for development purposes only because this is a critical security flaw!
+// This includes config.development.php to make the databse easily sharable over GitHub in our group
+require_once __DIR__ . '/config.development.php';
+// This has to be changed to config.php in production with real credentials to prevent a critical security flaw
+// The config.php file contains the real password and is NOT uploaded to GitHub
+// require_once __DIR__ . '/config.php';
 
 try {
     // Establish connection using DSN (Data Source Name) format

@@ -49,15 +49,20 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 // This prevents token prediction attacks. bin2hex() converts to hexadecimal string.
                 $rememberToken = bin2hex(random_bytes(32));
                 
-                // Store hashed token in database for server-side verification
+                // NOTE: If the database is compromised, attackers cannot use the hashed tokens
+                // to impersonate users. We use password_hash() which applies BCRYPT hashing.
+                $hashedToken = password_hash($rememberToken, PASSWORD_DEFAULT);
+                
+                // Store HASHED token in database for server-side verification
                 // NOTE: Using prepared statements here also prevents SQL injection
                 $updateQuery = "UPDATE users SET remember_token = :token WHERE user_id = :user_id";
                 $updateStatement = $connection->prepare($updateQuery);
-                $updateStatement->bindParam(':token', $rememberToken, PDO::PARAM_STR);
+                $updateStatement->bindParam(':token', $hashedToken, PDO::PARAM_STR);
                 $updateStatement->bindParam(':user_id', $user['user_id'], PDO::PARAM_INT);
                 $updateStatement->execute();
                 
-                // Set cookie with 30-day expiration (2,592,000 seconds)
+                // Set cookie with PLAIN token (not hashed) so we can verify it later
+                // NOTE: Cookie expiration is 30 days (2,592,000 seconds)
                 // Cookie path "/" ensures availability across entire application
                 setcookie("remember_token", $rememberToken, time() + (30 * 24 * 60 * 60), "/");
             }
