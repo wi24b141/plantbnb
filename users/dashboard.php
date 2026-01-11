@@ -365,6 +365,20 @@ try {
                     </a>
                 </div>
 
+                <!-- My Listings Card -->
+                <div class="col-12 col-md-4">
+                    <!-- Link to user's listings page -->
+                    <a href="/plantbnb/listings/my-listings.php" class="text-decoration-none">
+                        <div class="card shadow-sm h-100 text-center p-3">
+                            <div class="mb-2" style="font-size: 2.5rem;">
+                                🗂️
+                            </div>
+                            <h5 class="card-title">My Listings</h5>
+                            <p class="card-text small text-muted mb-0">View and edit your listings</p>
+                        </div>
+                    </a>
+                </div>
+
                 <!-- User Verification Card -->
                 <div class="col-12 col-md-4">
                     <!-- Link to verification page -->

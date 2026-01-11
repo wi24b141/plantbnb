@@ -119,8 +119,11 @@ try {
                 echo '        <strong>Location:</strong> ' . $safeLocation . '<br>';
                 echo '        <strong>Available:</strong> ' . $safeStartDate . ' to ' . $safeEndDate;
                 echo '      </p>';
-                echo '      <div class="d-grid">';
-                echo '        <a href="listing-details.php?id=' . $listingID . '" class="btn btn-success">View Details</a>';
+                // Buttons: stacked on mobile, side-by-side on md+ (flex-fill makes them equal width)
+                echo '      <div class="d-grid gap-2 d-md-flex">';
+                echo '        <a href="listing-details.php?id=' . $listingID . '" class="btn btn-success flex-md-fill me-md-2">View Details</a>';
+                // Edit button (only visible to the owner - page already requires login)
+                echo '        <a href="listing-editor.php?id=' . $listingID . '" class="btn btn-success flex-md-fill">Edit Listing</a>';
                 echo '      </div>';
                 echo '    </div>';
 
