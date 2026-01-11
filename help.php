@@ -32,7 +32,7 @@
                         <ol class="mb-0">
                             <li>Go to your Dashboard</li>
                             <li>Click "Create New Listing"</li>
-                            <li>Fill in plant details and dates</li>
+                            <li>Fill in plant / your personal details and dates</li>
                             <li>Upload a photo (optional)</li>
                             <li>Click "Create Listing"</li>
                         </ol>
