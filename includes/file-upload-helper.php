@@ -1,63 +1,46 @@
 <?php
-// ==================================================================
-// FILE UPLOAD HELPER FUNCTION
-// ==================================================================
-// This function handles file uploads to avoid repeating the same code
-// It checks file size, file type, creates directories, and moves files
-// ==================================================================
-
 function uploadFile($fileInputName, $uploadDirectory, $allowedTypes, $maxSize) {
-    // Check if a file was uploaded
-    // $_FILES[$fileInputName]['error'] === UPLOAD_ERR_OK means no errors (0 = success)
+    // Check if a file was uploaded and if the upload was successful
+    // NOTE: Returning null allows calling code to distinguish between "no file uploaded" and "validation failed"
     if (!isset($_FILES[$fileInputName]) || $_FILES[$fileInputName]['error'] !== UPLOAD_ERR_OK) {
-        // No file uploaded or upload error occurred
         return null;
     }
 
-    // Get file information
+    // Extract file metadata from the superglobal $_FILES array
     $fileName = $_FILES[$fileInputName]['name'];
     $fileSize = $_FILES[$fileInputName]['size'];
     $fileTmpPath = $_FILES[$fileInputName]['tmp_name'];
     $fileMimeType = $_FILES[$fileInputName]['type'];
 
-    // VALIDATION STEP 1: Check file size
-    // File must be smaller than the maximum allowed size
+    // Validate file size to prevent denial-of-service attacks from excessively large files
     if ($fileSize > $maxSize) {
         return "File size exceeds file size limit.";
     }
 
-    // VALIDATION STEP 2: Check file type
-    // File must be one of the allowed MIME types
+    // Validate file type to prevent malicious file uploads (e.g., PHP scripts disguised as images)
+    // NOTE: MIME type validation is a first line of defense; production systems should also verify file contents
     if (!in_array($fileMimeType, $allowedTypes)) {
         return "File type not allowed.";
     }
 
-    // Create the upload directory if it doesn't exist
-    // This ensures the directory is ready to receive the file
+    // Ensure the upload directory exists; create it recursively if it doesn't
     if (!is_dir($uploadDirectory)) {
-        // Directory doesn't exist, so create it
-        // 0777 = full permissions, true = create parent directories if needed
         mkdir($uploadDirectory, 0777, true);
     }
 
-    // Generate unique filename to prevent overwriting existing files
-    // uniqid() creates a unique ID based on current timestamp
+    // Generate a unique filename to prevent file overwrites and path traversal attacks
+    // NOTE: uniqid() creates a unique identifier based on the current time in microseconds, ensuring filename uniqueness
     $uniqueFileName = uniqid() . "_" . basename($fileName);
 
-    // Build the full destination path (absolute file system path for moving the file)
     $destinationPath = $uploadDirectory . '/' . $uniqueFileName;
 
-    // Move uploaded file from temporary location to permanent location
-    // move_uploaded_file() is the secure way to handle uploads
+    // Move the uploaded file from the temporary location to the final destination
     if (move_uploaded_file($fileTmpPath, $destinationPath)) {
-        // Success! Return ONLY the relative path for database storage
-        // WHY: The browser needs a relative path, not the full file system path
-        // Extract just the uploads/folder/filename part
-        // We look for 'uploads/' in the path and return everything from there
+        // Return the relative path starting from 'uploads/' for storage in the database
+        // This makes file paths portable across different server configurations
         $relativePath = substr($destinationPath, strpos($destinationPath, 'uploads/'));
         return $relativePath;
     } else {
-        // File move failed
         return "Failed to save the uploaded file.";
     }
 }

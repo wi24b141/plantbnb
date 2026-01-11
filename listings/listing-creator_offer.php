@@ -1,20 +1,13 @@
 <?php
-require_once __DIR__ . '/../includes/header.php';        
-require_once __DIR__ . '/../includes/user-auth.php';   
-require_once __DIR__ . '/../includes/db.php';            
-require_once __DIR__ . '/../includes/file-upload-helper.php';  
+require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../includes/user-auth.php';
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/file-upload-helper.php';
 
-// STEP 2: Get the logged-in user's ID
-// $_SESSION is a special PHP array that remembers data across pages
-// intval() converts the value to an integer (whole number)
-// We use intval() for security: it ensures the value is a number, not text or code
-// Example: intval('42') = 42, intval('hello') = 0
 $userID = intval($_SESSION['user_id']);
 
-// STEP 3: Initialize all form fields as empty strings
-// We create these variables NOW so they exist even BEFORE the form is submitted
-// This prevents PHP errors like "undefined variable"
-// Later, if validation fails, these will hold the user's input so they don't have to retype everything
+// Initialize form variables to prevent "undefined variable" notices and support form persistence.
+// Pre-populating with empty strings ensures clean re-rendering after validation failures.
 $listingType = 'offer';
 $title = '';
 $description = '';
@@ -27,26 +20,15 @@ $plantType = '';
 $wateringNeeds = '';
 $lightNeeds = '';
 
-// STEP 4: Initialize error and success message variables
-// We use an array for errors because there might be multiple errors
+// Separate error array from success string to accommodate multiple validation issues.
 $errors = [];
-// We use a simple string for success because there's only one success message
 $successMessage = '';
 
-// STEP 5: Check if the form was submitted
-// $_SERVER['REQUEST_METHOD'] tells us HOW the page was loaded
-// 'POST' means the user submitted a form (as opposed to 'GET' which is a normal page visit)
+// Process form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // The form was submitted, so we process the new listing
-
-    // STEP 6: Get all form data from $_POST and trim whitespace
-    // $_POST is a special PHP array containing all form data
-    // trim() removes extra spaces before and after the text
-    // Example: trim('  hello  ') becomes 'hello'
     
-    // The ?? operator means "if not set, use this default value instead"
-    // Example: $_POST['title'] ?? '' means "use $_POST['title'], but if it doesn't exist, use empty string ''"
-    
+    // Retrieve and sanitize input using null coalescing operator (??) for safe defaults.
+    // trim() prevents whitespace-based validation bypasses.
     $listingType = trim($_POST['listing_type'] ?? '');
     $title = trim($_POST['title'] ?? '');
     $description = trim($_POST['description'] ?? '');
@@ -58,25 +40,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $plantType = trim($_POST['plant_type'] ?? '');
     $wateringNeeds = trim($_POST['watering_needs'] ?? '');
     $lightNeeds = trim($_POST['light_needs'] ?? '');
-
-    // ============================================
-    // STEP 7: VALIDATION LOGIC
-    // ============================================
-    // We check all the user's input BEFORE saving to the database
-    // If something is wrong, we add an error message to the $errors array
     
-    // VALIDATION 1: Ensure listing type is 'offer' for this form
+    // ============================================
+    // SERVER-SIDE VALIDATION
+    // ============================================
+    // NOTE: Server-side validation is essential because client-side validation can be bypassed
+
+    // Enforce listing type constraint for this specific form.
     if ($listingType !== 'offer') {
         $errors[] = 'Invalid listing type.';
     }
 
-    // VALIDATION 2: Check title is not empty
+    // Title validation: presence and length constraints.
     if (empty($title)) {
         $errors[] = 'Title is required.';
     } else {
-        // Title exists, now check length
-        // strlen() counts the number of characters in a string
-        // Example: strlen('hello') = 5
         if (strlen($title) < 5) {
             $errors[] = 'Title must be at least 5 characters long.';
         }
@@ -85,61 +63,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // VALIDATION 3: Check description is not empty
+    // Description validation: minimum length ensures substantive content.
     if (empty($description)) {
         $errors[] = 'Description is required.';
     } else {
-        // Description exists, now check length
         if (strlen($description) < 20) {
             $errors[] = 'Description must be at least 20 characters long.';
         }
     }
 
-    // VALIDATION 4: Check location is not empty
+    // Location and date validations: required fields.
     if (empty($locationApprox)) {
         $errors[] = 'Location is required.';
     }
 
-    // VALIDATION 5: Check start date is not empty
     if (empty($startDate)) {
         $errors[] = 'Start Date is required.';
     }
 
-    // VALIDATION 6: Check end date is not empty
     if (empty($endDate)) {
         $errors[] = 'End Date is required.';
     }
 
-    // VALIDATION 7-9: For offers, service details are optional
-    // (these fields are primarily required for 'need' listings)
-    // We keep them optional here so providers can describe services but are not forced to.
+    // Service details (plant_type, watering_needs, light_needs) remain optional
+    // to allow flexibility in offer descriptions.
 
-    // VALIDATION 10: Check end date is after start date
-    // We only do this check if BOTH dates were filled in
+    // Logical date validation: end date must occur after start date.
     if (!empty($startDate) && !empty($endDate)) {
-        // strtotime() converts a date string to a Unix timestamp (a big number representing seconds since 1970)
-        // Example: strtotime('2026-01-15') = 1768867200
-        // We convert both dates to numbers so we can compare them
         $startTimestamp = strtotime($startDate);
         $endTimestamp = strtotime($endDate);
         
-        // Check if end date is BEFORE or EQUAL to start date (which is wrong)
         if ($endTimestamp <= $startTimestamp) {
             $errors[] = 'End date must be after start date.';
         }
     }
 
-    // Offer listings do not collect listing photos or care sheets
+    // Offer listings do not require photo uploads or care sheet documents.
     $listingPhotoPath = null;
     $careSheetPath = null;
 
-    // ============================================
-    // STEP 9: INSERT INTO DATABASE
-    // ============================================
-    
-    // Only insert into database if there are NO validation errors
-    // empty($errors) returns true if the array has no items in it
-    // If provider supplied service fields, append them to the description so they're saved
+    // Aggregate optional service fields into description for storage.
     if (!empty($plantType)) {
         $description .= "\n\nServices Offered: " . $plantType;
     }
@@ -150,19 +113,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $description .= "\n\nAdditional Notes: " . $lightNeeds;
     }
 
+    /**
+     * Database Persistence
+     * 
+     * NOTE: PDO (PHP Data Objects) provides a database-agnostic interface and supports
+     * prepared statements, which are essential for preventing SQL injection attacks.
+     * 
+     * NOTE: try-catch blocks handle PDOException gracefully, preventing sensitive error
+     * details from being exposed to end users while logging issues for developers.
+     */
     if (empty($errors)) {
-        // CRITICAL: We use try/catch for database operations
-        // If something goes wrong with the database, PHP will "throw" an error
-        // We "catch" that error and display it nicely instead of crashing the page
         try {
-            // STEP 9A: Insert the listing into the listings table
-            
-            // This is our SQL query (the command we send to the database)
-            // INSERT INTO means "add a new row to this table"
-            // We use :placeholders instead of putting values directly in the query
-            // Why? Security! This prevents "SQL Injection" attacks
-            // Example of SQL Injection: A hacker could type: ' OR '1'='1
-            // With placeholders, that text is treated as harmless text, not code
+            // NOTE: Prepared statements with named placeholders (:userID) separate SQL logic
+            // from user data, preventing SQL injection. Even if malicious input like
+            // "'; DROP TABLE listings; --" is provided, it's treated as literal string data.
             
             $insertListingQuery = "
                 INSERT INTO listings (
@@ -196,18 +160,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 )
             ";
 
-            // STEP 9B: Prepare the query
-            // $connection is the database connection object from db.php
-            // prepare() gets the query ready but doesn't execute it yet
-            // This is like preparing a form letter with blanks to fill in
+            // Prepare statement: compiles SQL with placeholders but does not execute.
             $insertListingStatement = $connection->prepare($insertListingQuery);
 
-            // STEP 9C: Bind parameters to the placeholders
-            // bindParam() connects each placeholder (:userID) to a PHP variable ($userID)
-            // PDO::PARAM_INT means "this is an integer (whole number)"
-            // PDO::PARAM_STR means "this is a string (text)"
-            // Think of this like filling in the blanks on the form letter
-            
+            // Bind PHP variables to SQL placeholders with explicit type declarations.
+            // PDO::PARAM_INT and PDO::PARAM_STR enforce type safety at the database driver level.
             $insertListingStatement->bindParam(':userID', $userID, PDO::PARAM_INT);
             $insertListingStatement->bindParam(':listingType', $listingType, PDO::PARAM_STR);
             $insertListingStatement->bindParam(':title', $title, PDO::PARAM_STR);
@@ -220,23 +177,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $insertListingStatement->bindParam(':experience', $experience, PDO::PARAM_STR);
             $insertListingStatement->bindParam(':priceRange', $priceRange, PDO::PARAM_STR);
 
-            // STEP 9D: Execute the query
-            // This actually sends the command to the database
-            // The database will create a new row with all our data
+            // Execute the prepared statement to persist the listing.
             $insertListingStatement->execute();
 
-            // STEP 9E: Get the ID of the newly created listing
-            // lastInsertId() returns the auto-generated ID from the INSERT
-            // Example: If this is the 42nd listing, this will return 42
-            // We need this ID to link the plant entry to this listing
+            // Retrieve auto-incremented primary key for the newly created listing.
             $newListingID = $connection->lastInsertId();
 
-            // Offers do not insert plant-specific rows
+            // Offer listings do not create corresponding plant table entries.
 
-            // SUCCESS! Both inserts worked!
             $successMessage = "Your listing has been created successfully!";
 
-            // Clear all form fields so the user can create another listing
+            // Reset form variables to empty state for subsequent listing creation.
             $listingType = '';
             $title = '';
             $description = '';
@@ -250,9 +201,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $lightNeeds = '';
 
         } catch (PDOException $error) {
-            // If a database error occurs, we end up here
-            // PDOException is the type of error that database operations can throw
-            // $error->getMessage() gets a description of what went wrong
+            // Catch database exceptions and provide user-friendly error feedback.
+            // NOTE: In production, detailed error messages should be logged server-side
+            // rather than displayed to users to prevent information disclosure.
             $errors[] = "Database error: " . $error->getMessage();
         }
     }
@@ -264,50 +215,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- viewport meta tag makes the page mobile-friendly -->
-    <!-- width=device-width means "use the device's actual width" -->
-    <!-- initial-scale=1.0 means "don't zoom in or out" -->
+    <!-- Viewport meta tag enables responsive design by setting viewport width to device width -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Offer - PlantBnB</title>
 </head>
 <body>
-    <!-- container = Bootstrap class that centers content and adds padding -->
-    <!-- mt-4 = margin-top: 1.5rem (adds space at the top) -->
+    <!-- Main Container: Bootstrap container class provides responsive fixed-width layout with horizontal padding -->
     <div class="container mt-4">
         
-        <!-- Back to Dashboard Button -->
-        <!-- row = Bootstrap class for horizontal layout -->
-        <!-- mb-3 = margin-bottom: 1rem (space below) -->
+        <!-- Navigation: Back to Dashboard -->
         <div class="row mb-3">
-            <!-- col-12 = full width on mobile (12 out of 12 columns) -->
-            <!-- col-md-10 = 10 out of 12 columns on medium screens and up (desktop) -->
-            <!-- offset-md-1 = push 1 column to the right on desktop (centers the content) -->
+            <!-- Bootstrap grid: col-12 (full width mobile), col-md-10 offset-md-1 (centered on desktop) -->
             <div class="col-12 col-md-10 offset-md-1">
-                <!-- btn = Bootstrap button class -->
-                <!-- btn-outline-secondary = gray border, white background -->
-                <!-- btn-sm = small size button -->
                 <a href="/plantbnb/users/dashboard.php" class="btn btn-outline-secondary btn-sm">
                     ← Back to Dashboard
                 </a>
             </div>
         </div>
 
-        <!-- Display success message if listing was created -->
+        <!-- Success Message Display -->
         <?php
-            // Check if there is a success message to display
             if (!empty($successMessage)) {
-                // Display green success alert
-                // alert = Bootstrap class for colored message boxes
-                // alert-success = green background (for success messages)
-                // alert-dismissible = can be closed by user
-                // fade show = animation effects
+                // Bootstrap alert-success provides visual feedback for successful operations.
                 echo "<div class=\"row mb-3\">";
                 echo "  <div class=\"col-12 col-md-10 offset-md-1\">";
                 echo "    <div class=\"alert alert-success alert-dismissible fade show\" role=\"alert\">";
                 
-                // htmlspecialchars() prevents XSS attacks
-                // It converts special characters like < > & to safe versions
-                // Example: <script> becomes &lt;script&gt; which just displays as text
+                // NOTE: htmlspecialchars() prevents XSS (Cross-Site Scripting) by encoding
+                // HTML special characters. This ensures user input is rendered as text, not code.
                 echo htmlspecialchars($successMessage);
                 
                 echo "      <button type=\"button\" class=\"btn-close\" data-bs-dismiss=\"alert\" aria-label=\"Close\"></button>";
@@ -317,27 +252,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         ?>
 
-        <!-- Display error messages if validation fails -->
+        <!-- Error Message Display -->
         <?php
-            // Check if there are any error messages to display
             if (!empty($errors)) {
-                // Display red error alert
-                // alert-danger = red background (for error messages)
+                // Bootstrap alert-danger provides visual emphasis for validation failures.
                 echo "<div class=\"row mb-3\">";
                 echo "  <div class=\"col-12 col-md-10 offset-md-1\">";
                 echo "    <div class=\"alert alert-danger\" role=\"alert\">";
                 echo "      <strong>Please fix the following errors:</strong>";
                 echo "      <ul class=\"mb-0 mt-2\">";
 
-                // Loop through each error and display it as a list item
-                // We use a simple for loop instead of foreach for clarity
-                $errorCount = count($errors);  // count() returns the number of items in an array
-                $i = 0;  // Start counter at 0
+                // Iterate through error array and sanitize each message for output.
+                $errorCount = count($errors);
+                $i = 0;
                 
                 while ($i < $errorCount) {
-                    // $errors[$i] gets the error message at position $i
                     echo "        <li>" . htmlspecialchars($errors[$i]) . "</li>";
-                    $i = $i + 1;  // Move to next error
+                    $i = $i + 1;
                 }
 
                 echo "      </ul>";
@@ -347,59 +278,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         ?>
 
-        <!-- Main Create Listing Card -->
-        <!-- col-12 = full width on mobile (12 out of 12 columns) -->
-        <!-- col-md-10 = 10 out of 12 columns on desktop -->
-        <!-- offset-md-1 = push 1 column to the right on desktop (centers the card) -->
-        <!-- mb-5 = margin-bottom: 3rem (large space below) -->
+        <!-- Main Form Card -->
         <div class="row mb-5">
             <div class="col-12 col-md-10 offset-md-1">
-                <!-- card = Bootstrap class for a bordered container with shadow -->
-                <!-- shadow-sm = small shadow effect -->
+                <!-- Bootstrap card component provides structured layout with header/body sections -->
                 <div class="card shadow-sm">
                     
                     <!-- Card Header -->
-                    <!-- card-header = special header area at top of card -->
-                    <!-- bg-success = green background color -->
-                    <!-- text-white = white text color -->
                     <div class="card-header bg-success text-white">
-                        <!-- mb-0 = margin-bottom: 0 (no space below) -->
                         <h3 class="mb-0">Create New Offer</h3>
-                        <!-- small = smaller font size -->
                         <p class="mb-0 small">Post a plant care offer to the community</p>
                     </div>
 
-                    <!-- Card Body with form -->
-                    <!-- card-body = main content area of the card with padding -->
+                    <!-- Card Body: Form Content -->
                     <div class="card-body">
                         
-                        <!-- ====================================== -->
-                        <!-- CREATE LISTING FORM -->
-                        <!-- ====================================== -->
-                        
-                        <!-- CRITICAL: enctype="multipart/form-data" is REQUIRED for file uploads -->
-                        <!-- Without this, the file upload will not work -->
-                        <!-- method="POST" means "send data securely to the server" -->
-                        <!-- action="" means submit to the same page (this file) -->
+                        <!-- Form submits to self via POST for server-side processing -->
                         <form method="POST" action="">
                             
-                            <!-- ====================================== -->
-                            <!-- SECTION 1: BASIC LISTING INFORMATION -->
-                            <!-- ====================================== -->
-                            
+                            <!-- Section 1: Basic Listing Information -->
                             <h5 class="mb-3">Basic Information</h5>
 
-                            <!-- Listing Type Selection -->
-                            <!-- mb-3 = margin-bottom: 1rem (space below for mobile touch-friendly) -->
+                            <!-- Listing Type: Fixed to 'offer' for this form -->
                             <div class="mb-3">
-                                <!-- for="listing_type" connects this label to the input with id="listing_type" -->
-                                <!-- form-label = Bootstrap class for form labels -->
                                 <label for="listing_type" class="form-label">Listing Type *</label>
                                 
-                                <!-- select = dropdown menu -->
-                                <!-- form-select = Bootstrap class for styled dropdowns -->
-                                <!-- required = browser will not allow form submission if empty -->
-                                <!-- Force this form to create 'offer' listings only -->
+                                <!-- Hidden input ensures POST data contains listing_type='offer' -->
                                 <input type="hidden" id="listing_type" name="listing_type" value="offer">
                                 <select class="form-select" disabled>
                                     <option value="offer" selected>Offer (I can provide plant care)</option>
@@ -411,11 +315,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="mb-3">
                                 <label for="title" class="form-label">Title *</label>
                                 
-                                <!-- type="text" = single-line text input -->
-                                <!-- form-control = Bootstrap class for styled inputs -->
-                                <!-- placeholder = gray hint text that appears when input is empty -->
-                                <!-- value = the current value of the input -->
-                                <!-- htmlspecialchars() prevents XSS attacks by escaping special characters -->
                                 <input 
                                     type="text" 
                                     id="title" 
@@ -432,9 +331,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <div class="mb-3">
                                 <label for="description" class="form-label">Description *</label>
                                 
-                                <!-- textarea = multi-line text input -->
-                                <!-- rows="5" = show 5 lines of text by default -->
-                                <!-- We put the value BETWEEN the tags, not in a value attribute -->
+                                <!-- Textarea value is placed between opening and closing tags -->
                                 <textarea 
                                     id="description" 
                                     name="description" 
@@ -448,17 +345,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </small>
                             </div>
 
-                            <!-- Offers do not collect listing photos or care sheets -->
+                            <!-- Offer listings do not require photo/care sheet uploads -->
 
-                            <!-- Form Divider -->
-                            <!-- hr = horizontal rule (a line across the page) -->
-                            <!-- my-4 = margin-top and margin-bottom: 1.5rem (space above and below) -->
                             <hr class="my-4">
 
-                            <!-- ====================================== -->
-                            <!-- SECTION 2: LOCATION AND DATES -->
-                            <!-- ====================================== -->
-                            
+                            <!-- Section 2: Location and Availability -->
                             <h5 class="mb-3">Location & Availability</h5>
 
                             <!-- Location Input -->
@@ -478,20 +369,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </small>
                             </div>
 
-                            <!-- Date Range Inputs -->
-                            <!-- row = creates a horizontal layout container -->
-                            <!-- On mobile, both inputs will stack (col-12 = full width) -->
-                            <!-- On desktop, they appear side-by-side (col-md-6 = half width each) -->
+                            <!-- Date Range: Responsive grid layout (stacked mobile, side-by-side desktop) -->
                             <div class="row">
                                 
                                 <!-- Start Date -->
-                                <!-- col-12 = full width on mobile -->
-                                <!-- col-md-6 = half width on medium screens and up (desktop) -->
                                 <div class="col-12 col-md-6 mb-3">
                                     <label for="start_date" class="form-label">Start Date *</label>
                                     
-                                    <!-- type="date" = creates a date picker -->
-                                    <!-- The browser shows a calendar popup when clicked -->
+                                    <!-- HTML5 date input provides native browser date picker -->
                                     <input 
                                         type="date" 
                                         id="start_date" 
@@ -518,13 +403,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </div>
                             </div>
 
-                            <!-- Form Divider -->
                             <hr class="my-4">
 
-                            <!-- ====================================== -->
-                            <!-- SECTION 3: PLANT DETAILS -->
-                            <!-- ====================================== -->
-                            
+                            <!-- Section 3: Service Details (Optional) -->
                             <h5 class="mb-3">Service Details (optional)</h5>
 
                             <!-- Service Types Input (maps to plant_type) -->
@@ -567,13 +448,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <small class="text-muted d-block mt-1">Any other details about your service (optional)</small>
                             </div>
 
-                            <!-- Form Divider -->
                             <hr class="my-4">
 
-                            <!-- ====================================== -->
-                            <!-- SECTION 4: OPTIONAL DETAILS -->
-                            <!-- ====================================== -->
-                            
+                            <!-- Section 4: Additional Details (Optional) -->
                             <h5 class="mb-3">Additional Details (Optional)</h5>
 
                             <!-- Experience Level Input -->
@@ -608,25 +485,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 </small>
                             </div>
 
-                            <!-- Form Divider -->
                             <hr class="my-4">
 
-                            <!-- Submit Button -->
-                            <!-- d-grid = makes the button container use CSS Grid layout -->
-                            <!-- This makes the button full-width (mobile-friendly) -->
-                            <!-- gap-2 = adds spacing inside the grid -->
+                            <!-- Submit Button: d-grid ensures full-width mobile-friendly layout -->
                             <div class="d-grid gap-2">
-                                <!-- type="submit" = clicking this button submits the form -->
-                                <!-- btn btn-success = Bootstrap button with green color -->
-                                <!-- btn-lg = large size button -->
                                 <button type="submit" class="btn btn-success btn-lg">
                                     Create Listing
                                 </button>
                             </div>
 
-                            <!-- Help text explaining what happens after submit -->
-                            <!-- text-center = centers the text horizontally -->
-                            <!-- mt-3 = margin-top: 1rem -->
                             <small class="text-muted d-block text-center mt-3">
                                 * Required fields. Your listing will be visible to all users immediately after creation.
                             </small>
